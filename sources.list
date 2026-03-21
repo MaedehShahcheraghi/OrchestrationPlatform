@@ -1,0 +1,3 @@
+deb http://mirror-linux.runflare.com/debian bookworm main
+deb http://mirror-linux.runflare.com/debian-security bookworm-security main
+deb http://mirror-linux.runflare.com/debian bookworm-updates main

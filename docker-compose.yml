@@ -1,0 +1,29 @@
+services:
+  orchestration-api:
+    container_name: orchestration-platform-api
+    build:
+      context: .
+      dockerfile: src/web/api/OrchestrationPlatform.Api/Dockerfile
+    image: orchestration-platform-api:latest
+    ports:
+      - "8000:8080" 
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+    networks:
+      - orchestration_network
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    container_name: orchestration-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - orchestration_network
+
+networks:
+  orchestration_network:
+    driver: bridge
