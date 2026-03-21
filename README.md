@@ -56,6 +56,6 @@ Ensure the following dependencies are installed on your host machine before proc
 ### Installation & Setup
 
 **1. Clone the repository:**
-```bash
+   ```bash
 git clone [https://github.com/MaedehShahcheraghi/OrchestrationPlatform.git](https://github.com/MaedehShahcheraghi/OrchestrationPlatform.git)
 cd OrchestrationPlatform
