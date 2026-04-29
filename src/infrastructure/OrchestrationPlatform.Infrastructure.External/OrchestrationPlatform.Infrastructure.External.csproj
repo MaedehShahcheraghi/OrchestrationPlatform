@@ -2,9 +2,20 @@
 
  
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+ 
+  <ItemGroup>
+    <PackageReference Include="Minio" Version="7.0.0" />
+    <PackageReference Include="SSH.NET" Version="2025.1.0" />
+  </ItemGroup>
+
+ 
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\OrchestrationPlatform.Application\OrchestrationPlatform.Application.csproj" />
+  </ItemGroup>
 
 </Project>
