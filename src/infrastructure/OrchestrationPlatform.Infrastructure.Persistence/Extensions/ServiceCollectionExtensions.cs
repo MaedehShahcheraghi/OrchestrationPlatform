@@ -3,9 +3,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OrchestrationPlatform.Application.Abstractions.Persistence;
 using OrchestrationPlatform.Application.Abstractions.Persistence.Common;
+using OrchestrationPlatform.Application.Abstractions.Services.SeedData;
 using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 using OrchestrationPlatform.Infrastructure.Persistence.Repositories;
 using OrchestrationPlatform.Infrastructure.Persistence.Repositories.Common;
+using OrchestrationPlatform.Infrastructure.Persistence.SeedData;
 
 namespace OrchestrationPlatform.Infrastructure.Persistence.Extensions;
 
@@ -38,6 +40,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped(typeof(IRepository<>), typeof(WriteRepository<>));
         services.AddScoped(typeof(IRepository<>), typeof(ReadRepository<>));
+        services.AddScoped(typeof(IApplicationDbSeeder), typeof(ApplicationDbSeeder));
 
         return services;
     }
