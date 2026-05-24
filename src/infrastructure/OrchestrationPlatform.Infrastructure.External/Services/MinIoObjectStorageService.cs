@@ -46,7 +46,7 @@ public sealed class MinIoObjectStorageService : IObjectStorageService
                 fileStream.Position = 0;
                 var hashBytes = await sha256.ComputeHashAsync(fileStream, cancellationToken);
                 sha256Hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-                fileStream.Position = 0; 
+                fileStream.Position = 0;
             }
 
             var putObjectArgs = new PutObjectArgs()
@@ -61,7 +61,7 @@ public sealed class MinIoObjectStorageService : IObjectStorageService
             _logger.LogInformation("File {FileName} uploaded successfully to {BucketName}/{ObjectKey}.",
                 fileName, DefaultBucketName, objectKey);
 
-            return new (DefaultBucketName, objectKey, fileSize, sha256Hash);
+            return new UploadResult(DefaultBucketName, objectKey, fileSize, sha256Hash);
         }
         catch (MinioException ex)
         {

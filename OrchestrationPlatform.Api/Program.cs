@@ -1,3 +1,6 @@
+﻿using OrchestrationPlatform.Application.Abstractions.Services.SeedData;
+using OrchestrationPlatform.Application.Extensions;
+using OrchestrationPlatform.Infrastructure.External.Extensions;
 using OrchestrationPlatform.Infrastructure.Persistence.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,7 +11,9 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddPersistence(builder.Configuration);
+builder.Services.AddPersistence(builder.Configuration)
+    .AddApplication()
+    .AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
@@ -25,5 +30,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-    // چون متد اصلی Program.cs در نسخه‌های جدید ناهمگام است، مستقیماً await می‌کنیم
+
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<IApplicationDbSeeder>();
+    await seeder.SeedAsync();
+}
+
 app.Run();
