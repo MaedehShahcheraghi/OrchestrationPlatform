@@ -25,4 +25,5 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+    // چون متد اصلی Program.cs در نسخه‌های جدید ناهمگام است، مستقیماً await می‌کنیم
 app.Run();
