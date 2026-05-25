@@ -21,9 +21,10 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\src\Infrastructure\OrchestrationPlatform.Infrastructure.External\OrchestrationPlatform.Infrastructure.External.csproj" />
-    <ProjectReference Include="..\src\infrastructure\OrchestrationPlatform.Infrastructure.Persistence\OrchestrationPlatform.Infrastructure.Persistence.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\core\OrchestrationPlatform.Application\OrchestrationPlatform.Application.csproj" />
+		<ProjectReference Include="..\..\..\Infrastructure\OrchestrationPlatform.Infrastructure.External\OrchestrationPlatform.Infrastructure.External.csproj" />
+		<ProjectReference Include="..\..\..\Infrastructure\OrchestrationPlatform.Infrastructure.Persistence\OrchestrationPlatform.Infrastructure.Persistence.csproj" />
+	</ItemGroup>
 
 </Project>
