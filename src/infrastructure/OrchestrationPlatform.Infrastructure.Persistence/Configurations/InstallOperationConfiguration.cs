@@ -43,7 +43,7 @@ public sealed class InstallOperationConfiguration : IEntityTypeConfiguration<Ins
             .HasColumnType("datetime2");
 
         builder.Property(x => x.ErrorMessage)
-            .HasMaxLength(4000);
+            .HasColumnType("nvarchar(max)");
 
         builder.Property(x => x.AnsiblePlaybookPath)
             .HasMaxLength(500);

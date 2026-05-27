@@ -24,7 +24,7 @@ public sealed class OperationLogConfiguration : IEntityTypeConfiguration<Operati
 
         builder.Property(x => x.Message)
             .IsRequired()
-            .HasMaxLength(1000);
+            .HasColumnType("nvarchar(max)");
 
         builder.Property(x => x.Details);
 

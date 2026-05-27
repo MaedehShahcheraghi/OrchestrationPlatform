@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using OrchestrationPlatform.Application.Abstractions.Models.ServiceModels;
 using OrchestrationPlatform.Application.Abstractions.Persistence.Common;
 using OrchestrationPlatform.Application.Abstractions.Services.External;
 using OrchestrationPlatform.Domain.Entities;
@@ -10,45 +11,49 @@ internal sealed class TriggerInstallCommandHandler(
     IUnitOfWork unitOfWork,
     IObjectStorageService storageService,
     IOrchestrationService orchestrationService)
-    : IRequestHandler<TriggerInstallCommand, Guid>
+    : IRequestHandler<TriggerInstallCommand, List<Guid>>
 {
-    public async Task<Guid> Handle(TriggerInstallCommand request, CancellationToken cancellationToken)
+    public async Task<List<Guid>> Handle(TriggerInstallCommand request, CancellationToken cancellationToken)
     {
         var hostRepo = unitOfWork.GetReadRepository<OperatingSystemHost>();
         var artifactRepo = unitOfWork.GetReadRepository<PackageArtifact>();
         var operationRepo = unitOfWork.GetWriteRepository<InstallOperation>();
 
-        var host = await hostRepo.GetByIdAsync(request.OperatingSystemHostId, cancellationToken);
-        if (host == null) throw new ApplicationException("Host not found.");
+        var hosts = await hostRepo.ListAsync(h => request.OperatingSystemHostIds.Contains(h.Id),
+            cancellationToken: cancellationToken);
+        if (!hosts.Any()) throw new ApplicationException("No valid hosts found.");
 
         var artifact = await artifactRepo.FirstOrDefaultAsync(
-            a => a.SoftwarePackageVersionId == request.SoftwarePackageVersionId && a.IsActive,
-            cancellationToken);
+            a => a.SoftwarePackageVersionId == request.SoftwarePackageVersionId && a.IsActive, cancellationToken);
         if (artifact == null) throw new ApplicationException("Package artifact not found.");
 
         var downloadUrl = await storageService.GetDownloadUrlAsync(
-            artifact.BucketName,
-            artifact.ObjectKey,
-            TimeSpan.FromHours(1),
-            cancellationToken);
+            artifact.BucketName, artifact.ObjectKey, TimeSpan.FromHours(1), cancellationToken);
 
-        var operation = new InstallOperation(
-            request.SoftwarePackageVersionId,
-            request.OperatingSystemHostId,
-            InstallOperationType.Install,
-            DateTime.UtcNow);
+        var operations = new List<InstallOperation>();
+        var targetNodes = new List<BulkTargetModel>();
+
+        foreach (var host in hosts)
+        {
+            var operation = new InstallOperation(
+                request.SoftwarePackageVersionId,
+                host.Id,
+                InstallOperationType.Install,
+                DateTime.UtcNow);
+
+            operations.Add(operation);
+
+            targetNodes.Add(new BulkTargetModel(operation.Id, host.IpAddress, host.Username));
+        }
 
         var workflowExecutionId = await orchestrationService.TriggerInstallWorkflowAsync(
-            operation.Id,
-            host.IpAddress,
-            host.Username,
-            downloadUrl,
-            cancellationToken);
+            targetNodes, downloadUrl, cancellationToken);
 
-        operation.SetExternalWorkflowId(workflowExecutionId);
-        await operationRepo.AddAsync(operation, cancellationToken);
+        foreach (var op in operations) op.SetExternalWorkflowId(workflowExecutionId);
+
+        await operationRepo.AddRangeAsync(operations, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return operation.Id;
+        return operations.Select(o => o.Id).ToList();
     }
 }

@@ -55,4 +55,4 @@ To register and manage a target host in the **Orchestration Platform**, the conf
 Log in to your target virtual machine and run the following command once using your deployment user. This creates an isolated and secure sudoers rule for the platform:
 
 ```bash
-echo "$USER ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/orchestration-platform && sudo chmod 0440 /etc/sudoers.d/orchestration-platform
+echo "deploy-agent ALL=(ALL) NOPASSWD: /usr/bin/apt, /usr/bin/dpkg" | sudo tee /etc/sudoers.d/deploy-automation && sudo chmod 0440 /etc/sudoers.d/deploy-automation
