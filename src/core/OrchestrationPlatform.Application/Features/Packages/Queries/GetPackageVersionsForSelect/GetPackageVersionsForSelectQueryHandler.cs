@@ -18,7 +18,6 @@ internal sealed class GetPackageVersionsForSelectQueryHandler
         GetPackageVersionsForSelectQuery request,
         CancellationToken cancellationToken)
     {
-        // دسترسی یکپارچه به ریپازیتوری خواندن ورژن‌ها
         var readRepository = _unitOfWork.GetReadRepository<SoftwarePackageVersion>();
 
         var versions = await readRepository.ListProjectedAsync(
@@ -31,7 +30,7 @@ internal sealed class GetPackageVersionsForSelectQueryHandler
                 v.Architecture.ToString()
             ),
             v => v.SoftwarePackageId == request.SoftwarePackageId && v.IsActive,
-            q => q.OrderByDescending(v => v.CreatedAtUtc), // نسخه‌های جدیدتر در بالای لیست
+            q => q.OrderByDescending(v => v.CreatedAtUtc),
             cancellationToken: cancellationToken
         );
 

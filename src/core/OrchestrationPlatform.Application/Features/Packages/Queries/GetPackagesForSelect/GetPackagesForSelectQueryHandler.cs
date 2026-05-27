@@ -18,13 +18,12 @@ internal sealed class GetPackagesForSelectQueryHandler
         GetPackagesForSelectQuery request,
         CancellationToken cancellationToken)
     {
-        // فراخوانی ریپازیتوری خواندن مستقیماً از طریق UnitOfWork
         var readRepository = _unitOfWork.GetReadRepository<SoftwarePackage>();
 
         var packages = await readRepository.ListProjectedAsync(
             p => new PackageSelectItemDto(p.Id, p.Name, p.Description ?? string.Empty),
             p => p.IsActive,
-            q => q.OrderBy(p => p.Name), // مرتب‌سازی الفبایی برای نمایش بهتر در UI
+            q => q.OrderBy(p => p.Name), 
             cancellationToken: cancellationToken
         );
 
