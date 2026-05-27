@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 
@@ -11,9 +12,11 @@ using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(OrchestrationWriteDbContext))]
-    partial class OrchestrationWriteDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260527144000_change message type in operation log")]
+    partial class changemessagetypeinoperationlog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

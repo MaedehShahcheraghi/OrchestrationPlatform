@@ -1,4 +1,5 @@
-﻿using OrchestrationPlatform.Domain.Common;
+﻿using System.Linq.Expressions;
+using OrchestrationPlatform.Domain.Common;
 
 namespace OrchestrationPlatform.Application.Abstractions.Persistence;
 
@@ -32,4 +33,7 @@ public interface IWriteRepository<TEntity> : IRepository<TEntity>
     void Restore(TEntity entity);
 
     void RestoreRange(IEnumerable<TEntity> entities);
+
+    Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default,
+        params Expression<Func<TEntity, object>>[] includes);
 }

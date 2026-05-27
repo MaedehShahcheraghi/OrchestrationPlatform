@@ -1,11 +1,11 @@
-﻿namespace OrchestrationPlatform.Application.Abstractions.Services.External;
+﻿using OrchestrationPlatform.Application.Abstractions.Models.ServiceModels;
+
+namespace OrchestrationPlatform.Application.Abstractions.Services.External;
 
 public interface IOrchestrationService
 {
-    Task<string> TriggerInstallWorkflowAsync(
-        Guid operationId,
-        string hostIp,
-        string sshUsername,
+    public Task<string> TriggerInstallWorkflowAsync(
+        List<BulkTargetModel> targets,
         string downloadUrl,
         CancellationToken cancellationToken = default);
 

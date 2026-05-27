@@ -3,5 +3,5 @@
 namespace OrchestrationPlatform.Application.Features.Operations.Commands.TriggerInstall;
 
 public sealed record TriggerInstallCommand(
-    Guid OperatingSystemHostId,
-    Guid SoftwarePackageVersionId) : IRequest<Guid>;
+    List<Guid> OperatingSystemHostIds,
+    Guid SoftwarePackageVersionId) : IRequest<List<Guid>>;

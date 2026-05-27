@@ -1,63 +1,49 @@
 ﻿using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using OrchestrationPlatform.Application.Abstractions.Models.ServiceModels;
 using OrchestrationPlatform.Application.Abstractions.Services.External;
 
 namespace OrchestrationPlatform.Infrastructure.External.Services;
 
-public sealed class N8NOrchestrationService : IOrchestrationService
+public sealed class N8NOrchestrationService(
+    HttpClient httpClient,
+    ILogger<N8NOrchestrationService> logger,
+    IConfiguration configuration)
+    : IOrchestrationService
 {
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<N8NOrchestrationService> _logger;
-    private readonly string _n8NWebhookBaseUrl;
+    private readonly string _baseUrl = configuration["PlatformSettings:BaseUrl"] ?? "http://localhost:5232";
 
-    public N8NOrchestrationService(
-        HttpClient httpClient,
-        ILogger<N8NOrchestrationService> logger,
-        IConfiguration configuration)
-    {
-        _httpClient = httpClient;
-        _logger = logger;
-
-        _n8NWebhookBaseUrl = configuration["Orchestration:N8nWebhookBaseUrl"]
-                             ?? throw new ArgumentNullException("N8nWebhookBaseUrl is not configured.");
-    }
+    private readonly string _n8NWebhookBaseUrl = configuration["Orchestration:N8nWebhookBaseUrl"]
+                                                 ?? throw new ArgumentNullException(
+                                                     "N8nWebhookBaseUrl is not configured.");
 
     public async Task<string> TriggerInstallWorkflowAsync(
-        Guid operationId,
-        string hostIp,
-        string sshUsername,
+        List<BulkTargetModel> targets,
         string downloadUrl,
         CancellationToken cancellationToken = default)
     {
         var webhookUrl = $"{_n8NWebhookBaseUrl}/trigger-ansible-install";
 
+        var formattedTargets = targets.Select(t => new
+        {
+            Host = t.HostIp,
+            User = t.SshUsername,
+            CallbackUrl = $"{_baseUrl.TrimEnd('/')}/api/operations/{t.OperationId}/callback"
+        }).ToList();
+
         var payload = new
         {
-            OperationId = operationId,
-            TargetHost = hostIp,
-            SshUser = sshUsername,
             PackageDownloadUrl = downloadUrl,
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
+            Targets = formattedTargets // آرایه ماشین‌ها
         };
 
-        try
-        {
-            _logger.LogInformation("Triggering n8n workflow for OperationId: {OperationId} on Host: {HostIp}",
-                operationId, hostIp);
+        var response = await httpClient.PostAsJsonAsync(webhookUrl, payload, cancellationToken);
+        response.EnsureSuccessStatusCode();
 
-            var response = await _httpClient.PostAsJsonAsync(webhookUrl, payload, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<N8nWebhookResponse>(cancellationToken);
-
-            return result?.ExecutionId ?? Guid.NewGuid().ToString();
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Failed to communicate with n8n Webhook. OperationId: {OperationId}", operationId);
-            throw new ApplicationException("Failed to trigger orchestration workflow.", ex);
-        }
+        var result = await response.Content.ReadFromJsonAsync<N8nWebhookResponse>(cancellationToken);
+        return result?.ExecutionId ?? Guid.NewGuid().ToString();
     }
 
     public async Task CancelWorkflowAsync(string externalWorkflowId, CancellationToken cancellationToken = default)
@@ -66,16 +52,16 @@ public sealed class N8NOrchestrationService : IOrchestrationService
 
         try
         {
-            _logger.LogInformation("Attempting to cancel workflow execution: {ExternalWorkflowId}", externalWorkflowId);
-            var response = await _httpClient.PostAsync(cancelUrl, null, cancellationToken);
+            logger.LogInformation("Attempting to cancel workflow execution: {ExternalWorkflowId}", externalWorkflowId);
+            var response = await httpClient.PostAsync(cancelUrl, null, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
-                _logger.LogWarning("Cancel workflow returned non-success status code: {StatusCode}",
+                logger.LogWarning("Cancel workflow returned non-success status code: {StatusCode}",
                     response.StatusCode);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while trying to cancel workflow {ExternalWorkflowId}",
+            logger.LogError(ex, "Error occurred while trying to cancel workflow {ExternalWorkflowId}",
                 externalWorkflowId);
         }
     }

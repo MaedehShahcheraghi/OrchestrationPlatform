@@ -1,4 +1,6 @@
-﻿using OrchestrationPlatform.Application.Abstractions.Persistence;
+﻿using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
+using OrchestrationPlatform.Application.Abstractions.Persistence;
 using OrchestrationPlatform.Domain.Common;
 using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 
@@ -119,5 +121,19 @@ internal sealed class WriteRepository<TEntity>(
         orchestrationWriteDbContext
             .Set<TEntity>()
             .UpdateRange(entityList);
+    }
+
+    public async Task<TEntity?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default,
+        params Expression<Func<TEntity, object>>[] includes)
+    {
+        var query = orchestrationWriteDbContext.Set<TEntity>().AsQueryable();
+
+        if (includes.Length > 0)
+            foreach (var include in includes)
+                query = query.Include(include);
+
+        return await query.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 }
