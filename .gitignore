@@ -1,7 +1,8 @@
 **/appsettings.Development.json
 *.env
 .qodoo
-
+appsettings.json
+appsettings.Development.json
 .vs/
 *.user
 *.userosscache
