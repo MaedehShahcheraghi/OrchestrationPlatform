@@ -10,12 +10,12 @@ public interface IReadRepository<TEntity> : IRepository<TEntity>
     Task<TEntity?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default,
-        params Expression<Func<TEntity, object>>[] includes);
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null);
 
     Task<TEntity?> FirstOrDefaultAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken cancellationToken = default,
-        params Expression<Func<TEntity, object>>[] includes);
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null);
 
     Task<IReadOnlyList<TEntity>> ListAsync(
         Expression<Func<TEntity, bool>>? predicate = null,
@@ -24,7 +24,7 @@ public interface IReadRepository<TEntity> : IRepository<TEntity>
         int? take = null,
         bool asSplitQuery = false,
         CancellationToken cancellationToken = default,
-        params Expression<Func<TEntity, object>>[] includes);
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null);
 
     Task<PagedResult<TEntity>> PageAsync(
         int pageNumber,
@@ -33,7 +33,7 @@ public interface IReadRepository<TEntity> : IRepository<TEntity>
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         bool asSplitQuery = false,
         CancellationToken cancellationToken = default,
-        params Expression<Func<TEntity, object>>[] includes);
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null);
 
     Task<IReadOnlyList<TResult>> ListProjectedAsync<TResult>(
         Expression<Func<TEntity, TResult>> selector,

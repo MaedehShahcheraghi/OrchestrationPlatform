@@ -34,6 +34,13 @@ public interface IWriteRepository<TEntity> : IRepository<TEntity>
 
     void RestoreRange(IEnumerable<TEntity> entities);
 
-    Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default,
-        params Expression<Func<TEntity, object>>[] includes);
+    public Task<TEntity?> GetForUpdateAsync(
+        Guid id,
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null);
+
+
+    Task<TEntity?> FirstOrDefaultAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default,
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null);
 }

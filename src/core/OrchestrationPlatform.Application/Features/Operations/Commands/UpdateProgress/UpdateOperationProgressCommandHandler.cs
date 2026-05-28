@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using OrchestrationPlatform.Application.Abstractions.Persistence.Common;
 using OrchestrationPlatform.Application.Abstractions.Services.Api;
 using OrchestrationPlatform.Domain.Entities;
@@ -14,8 +15,12 @@ public sealed class UpdateOperationProgressCommandHandler(
     public async Task Handle(UpdateOperationProgressCommand request, CancellationToken cancellationToken)
     {
         var operationRepo = unitOfWork.GetWriteRepository<InstallOperation>();
-        var operation = await operationRepo.GetByIdAsync(request.OperationId, cancellationToken);
+        var installedSoftwareRepo = unitOfWork.GetWriteRepository<InstalledSoftware>();
 
+        var operation = await operationRepo.FirstOrDefaultAsync(x => x.Id == request.OperationId,
+            includeAction: x => x
+                .Include(y => y.SoftwarePackageVersion)
+                .ThenInclude(z => z.SoftwarePackage));
         if (operation == null) return;
 
         Enum.TryParse<InstallOperationStatus>(request.Status, true, out var parsedStatus);
@@ -34,7 +39,26 @@ public sealed class UpdateOperationProgressCommandHandler(
                 break;
             case InstallOperationStatus.Succeeded:
                 operation.Succeed(DateTime.UtcNow);
+
+                var alreadyInstalled = await installedSoftwareRepo.FirstOrDefaultAsync(
+                    x => x.OperatingSystemHostId == operation.OperatingSystemHostId &&
+                         x.SoftwarePackageVersionId == operation.SoftwarePackageVersionId, cancellationToken);
+
+                if (alreadyInstalled == null)
+                {
+                    var inventoryRecord = new InstalledSoftware(
+                        operation.SoftwarePackageVersionId,
+                        operation.OperatingSystemHostId,
+                        operation.Id,
+                        operation.SoftwarePackageVersion.SoftwarePackage.Name,
+                        operation.SoftwarePackageVersion.Version,
+                        DateTime.UtcNow);
+
+                    await installedSoftwareRepo.AddAsync(inventoryRecord, cancellationToken);
+                }
+
                 break;
+
             case InstallOperationStatus.Failed:
                 operation.Fail(request.Message, DateTime.UtcNow);
                 break;
@@ -44,7 +68,6 @@ public sealed class UpdateOperationProgressCommandHandler(
 
         operation.AddLog(parsedLogLevel, request.Message, null, DateTime.UtcNow);
 
-        operationRepo.Update(operation);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         await notifier.NotifyProgressAsync(

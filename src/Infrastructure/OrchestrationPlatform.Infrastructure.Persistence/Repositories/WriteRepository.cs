@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using OrchestrationPlatform.Application.Abstractions.Persistence;
 using OrchestrationPlatform.Domain.Common;
 using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
+using OrchestrationPlatform.Infrastructure.Persistence.Extensions;
 
 namespace OrchestrationPlatform.Infrastructure.Persistence.Repositories;
 
@@ -123,17 +124,22 @@ internal sealed class WriteRepository<TEntity>(
             .UpdateRange(entityList);
     }
 
-    public async Task<TEntity?> GetByIdAsync(
+    public async Task<TEntity?> GetForUpdateAsync(
         Guid id,
-        CancellationToken cancellationToken = default,
-        params Expression<Func<TEntity, object>>[] includes)
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null)
     {
-        var query = orchestrationWriteDbContext.Set<TEntity>().AsQueryable();
+        return await orchestrationWriteDbContext.Set<TEntity>()
+            .ApplySpecification(entity => entity.Id == id, null, false, includeAction)
+            .FirstOrDefaultAsync();
+    }
 
-        if (includes.Length > 0)
-            foreach (var include in includes)
-                query = query.Include(include);
-
-        return await query.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+    public async Task<TEntity?> FirstOrDefaultAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default,
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null)
+    {
+        return await orchestrationWriteDbContext.Set<TEntity>()
+            .ApplySpecification(predicate, null, false, includeAction)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

@@ -1,60 +1,72 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using OrchestrationPlatform.Application.Features.Packages.Commands.UploadPackage;
-using OrchestrationPlatform.Application.Features.Packages.Queries.GetPackagesForSelect;
-using OrchestrationPlatform.Application.Features.Packages.Queries.GetPackageVersionsForSelect;
+using OrchestrationPlatform.Application.Features.Packages.Commands.CreatePackage;
+using OrchestrationPlatform.Application.Features.Packages.Commands.DeletePackage;
+using OrchestrationPlatform.Application.Features.Packages.Commands.UpdatePackage;
+using OrchestrationPlatform.Application.Features.Packages.Queries.GetAllPackages;
+using OrchestrationPlatform.Application.Features.SoftwarePackageVersion.Commands.CreateVersion;
+using OrchestrationPlatform.Application.Features.SoftwarePackageVersion.Commands.UpdateVersion;
+using OrchestrationPlatform.Application.Features.SoftwarePackageVersion.Queries.GetVersionsByPackageId;
 
 namespace OrchestrationPlatform.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PackagesController : ControllerBase
+public class PackagesController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public PackagesController(IMediator mediator)
+    [HttpGet]
+    public async Task<IActionResult> GetAllPackages(CancellationToken cancellationToken)
     {
-        _mediator = mediator;
+        var result = await mediator.Send(new GetAllPackagesQuery(), cancellationToken);
+        return Ok(result);
     }
 
-    [HttpPost("{versionId:guid}/upload")]
-    public async Task<IActionResult> UploadPackageArtifact(Guid versionId, IFormFile file,
+    [HttpPost]
+    public async Task<IActionResult> CreatePackage([FromBody] CreatePackageCommand command,
         CancellationToken cancellationToken)
     {
-        if (file == null || file.Length == 0)
-            return BadRequest("File is empty.");
-
-        // باز کردن استریم در لایه نمایش و پاس دادن آن به هسته مرکزی
-        await using var stream = file.OpenReadStream();
-
-        var command = new UploadPackageCommand(
-            versionId,
-            stream,
-            file.FileName,
-            file.ContentType,
-            file.Length);
-
-        var artifactId = await _mediator.Send(command, cancellationToken);
-
-        return Ok(new { ArtifactId = artifactId, Message = "File uploaded successfully." });
+        var packageId = await mediator.Send(command, cancellationToken);
+        return CreatedAtAction(nameof(GetAllPackages), new { id = packageId }, new { Id = packageId });
     }
 
-    [HttpGet("select-items")]
-    public async Task<IActionResult> GetPackagesForSelect(CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdatePackage(Guid id, [FromBody] UpdatePackageCommand command,
+        CancellationToken cancellationToken)
     {
-        var query = new GetPackagesForSelectQuery();
-        var packages = await _mediator.Send(query, cancellationToken);
-
-        return Ok(packages);
+        if (id != command.Id) return BadRequest("ID mismatch");
+        await mediator.Send(command, cancellationToken);
+        return NoContent();
     }
 
-    // گرفتن لیست ورژن‌ها برای سلکت‌باکس دوم (وابسته به انتخاب اول)
-    [HttpGet("{packageId:guid}/versions/select-items")]
-    public async Task<IActionResult> GetPackageVersionsForSelect(Guid packageId, CancellationToken cancellationToken)
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeletePackage(Guid id, CancellationToken cancellationToken)
     {
-        var query = new GetPackageVersionsForSelectQuery(packageId);
-        var versions = await _mediator.Send(query, cancellationToken);
+        await mediator.Send(new DeletePackageCommand(id), cancellationToken);
+        return NoContent();
+    }
 
-        return Ok(versions);
+    [HttpGet("{packageId:guid}/versions")]
+    public async Task<IActionResult> GetPackageVersions(Guid packageId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetVersionsByPackageIdQuery(packageId), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("{packageId:guid}/versions")]
+    public async Task<IActionResult> CreateVersion(Guid packageId, [FromBody] CreatePackageVersionCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (packageId != command.SoftwarePackageId) return BadRequest("Package ID mismatch");
+        var versionId = await mediator.Send(command, cancellationToken);
+        return Ok(new { Id = versionId });
+    }
+
+    [HttpPut("versions/{versionId:guid}")]
+    public async Task<IActionResult> UpdateVersion(Guid versionId, [FromBody] UpdatePackageVersionCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (versionId != command.Id) return BadRequest("Version ID mismatch");
+        await mediator.Send(command, cancellationToken);
+        return NoContent();
     }
 }
