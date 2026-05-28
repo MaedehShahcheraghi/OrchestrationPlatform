@@ -4,6 +4,7 @@ using OrchestrationPlatform.Application.Abstractions.Models.Base;
 using OrchestrationPlatform.Application.Abstractions.Persistence;
 using OrchestrationPlatform.Domain.Common;
 using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
+using OrchestrationPlatform.Infrastructure.Persistence.Extensions;
 
 namespace OrchestrationPlatform.Infrastructure.Persistence.Repositories;
 
@@ -15,29 +16,23 @@ internal sealed class ReadRepository<TEntity>(
     public async Task<TEntity?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default,
-        params Expression<Func<TEntity, object>>[] includes)
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null)
     {
-        var query = BuildQuery(
-            entity => entity.Id == id,
-            null,
-            false,
-            includes);
-
-        return await query.FirstOrDefaultAsync(cancellationToken);
+        return await orchestrationReadDbContext.Set<TEntity>()
+            .AsNoTracking()
+            .ApplySpecification(entity => entity.Id == id, null, false, includeAction)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<TEntity?> FirstOrDefaultAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken cancellationToken = default,
-        params Expression<Func<TEntity, object>>[] includes)
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null)
     {
-        var query = BuildQuery(
-            predicate,
-            null,
-            false,
-            includes);
-
-        return await query.FirstOrDefaultAsync(cancellationToken);
+        return await orchestrationReadDbContext.Set<TEntity>()
+            .AsNoTracking()
+            .ApplySpecification(predicate, null, false, includeAction)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<TEntity>> ListAsync(
@@ -47,17 +42,13 @@ internal sealed class ReadRepository<TEntity>(
         int? take = null,
         bool asSplitQuery = false,
         CancellationToken cancellationToken = default,
-        params Expression<Func<TEntity, object>>[] includes)
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null)
     {
-        var query = BuildQuery(
-            predicate,
-            orderBy,
-            asSplitQuery,
-            includes);
-
-        query = ApplyPaging(query, skip, take);
-
-        return await query.ToListAsync(cancellationToken);
+        return await orchestrationReadDbContext.Set<TEntity>()
+            .AsNoTracking()
+            .ApplySpecification(predicate, orderBy, asSplitQuery, includeAction)
+            .ApplyPaging(skip, take)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<PagedResult<TEntity>> PageAsync(
@@ -67,17 +58,14 @@ internal sealed class ReadRepository<TEntity>(
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         bool asSplitQuery = false,
         CancellationToken cancellationToken = default,
-        params Expression<Func<TEntity, object>>[] includes)
+        Func<IQueryable<TEntity>, IQueryable<TEntity>>? includeAction = null)
     {
         if (pageNumber < 1) pageNumber = 1;
-
         if (pageSize < 1) pageSize = 10;
 
-        var query = BuildQuery(
-            predicate,
-            orderBy,
-            asSplitQuery,
-            includes);
+        var query = orchestrationReadDbContext.Set<TEntity>()
+            .AsNoTracking()
+            .ApplySpecification(predicate, orderBy, asSplitQuery, includeAction);
 
         var totalCount = await query.CountAsync(cancellationToken);
 
@@ -101,17 +89,10 @@ internal sealed class ReadRepository<TEntity>(
         int? take = null,
         CancellationToken cancellationToken = default)
     {
-        var query = orchestrationReadDbContext
-            .Set<TEntity>()
-            .AsNoTracking();
-
-        if (predicate is not null) query = query.Where(predicate);
-
-        if (orderBy is not null) query = orderBy(query);
-
-        query = ApplyPaging(query, skip, take);
-
-        return await query
+        return await orchestrationReadDbContext.Set<TEntity>()
+            .AsNoTracking()
+            .ApplySpecification(predicate, orderBy, false)
+            .ApplyPaging(skip, take)
             .Select(selector)
             .ToListAsync(cancellationToken);
     }
@@ -137,40 +118,5 @@ internal sealed class ReadRepository<TEntity>(
             .Set<TEntity>()
             .AsNoTracking()
             .AnyAsync(predicate, cancellationToken);
-    }
-
-    private IQueryable<TEntity> BuildQuery(
-        Expression<Func<TEntity, bool>>? predicate,
-        Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy,
-        bool asSplitQuery,
-        params Expression<Func<TEntity, object>>[] includes)
-    {
-        var query = orchestrationReadDbContext
-            .Set<TEntity>()
-            .AsNoTracking();
-
-        if (asSplitQuery) query = query.AsSplitQuery();
-
-        if (includes.Length > 0)
-            foreach (var include in includes)
-                query = query.Include(include);
-
-        if (predicate is not null) query = query.Where(predicate);
-
-        if (orderBy is not null) query = orderBy(query);
-
-        return query;
-    }
-
-    private static IQueryable<TEntity> ApplyPaging(
-        IQueryable<TEntity> query,
-        int? skip,
-        int? take)
-    {
-        if (skip.HasValue) query = query.Skip(skip.Value);
-
-        if (take.HasValue) query = query.Take(take.Value);
-
-        return query;
     }
 }

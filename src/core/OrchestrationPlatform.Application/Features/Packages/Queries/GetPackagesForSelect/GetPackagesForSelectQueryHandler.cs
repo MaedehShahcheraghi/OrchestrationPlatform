@@ -23,7 +23,7 @@ internal sealed class GetPackagesForSelectQueryHandler
         var packages = await readRepository.ListProjectedAsync(
             p => new PackageSelectItemDto(p.Id, p.Name, p.Description ?? string.Empty),
             p => p.IsActive,
-            q => q.OrderBy(p => p.Name), 
+            q => q.OrderBy(p => p.Name),
             cancellationToken: cancellationToken
         );
 

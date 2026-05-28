@@ -1,6 +1,5 @@
 ﻿using MediatR;
 using OrchestrationPlatform.Application.Abstractions.Persistence.Common;
-using OrchestrationPlatform.Domain.Entities;
 
 namespace OrchestrationPlatform.Application.Features.Packages.Queries.GetPackageVersionsForSelect;
 
@@ -18,7 +17,7 @@ internal sealed class GetPackageVersionsForSelectQueryHandler
         GetPackageVersionsForSelectQuery request,
         CancellationToken cancellationToken)
     {
-        var readRepository = _unitOfWork.GetReadRepository<SoftwarePackageVersion>();
+        var readRepository = _unitOfWork.GetReadRepository<Domain.Entities.SoftwarePackageVersion>();
 
         var versions = await readRepository.ListProjectedAsync(
             v => new PackageVersionSelectItemDto(
