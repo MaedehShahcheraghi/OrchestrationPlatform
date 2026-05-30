@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using OrchestrationPlatform.Application.Features.Operations.Commands.TriggerInstall;
+using OrchestrationPlatform.Application.Features.Operations.Commands.TriggerUninstall;
 using OrchestrationPlatform.Application.Features.Operations.Commands.UpdateProgress;
 using OrchestrationPlatform.Application.Features.Operations.Queries.GetHistory;
 
@@ -17,8 +18,16 @@ public class OperationsController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpPost]
+    [HttpPost("install")]
     public async Task<IActionResult> TriggerInstall([FromBody] TriggerInstallCommand command,
+        CancellationToken cancellationToken)
+    {
+        var operationIds = await _mediator.Send(command, cancellationToken);
+        return Ok(new { Message = "Installation started", OperationIds = operationIds });
+    }
+
+    [HttpPost("uninstall")]
+    public async Task<IActionResult> TriggerUnInstall([FromBody] TriggerUninstallCommand command,
         CancellationToken cancellationToken)
     {
         var operationIds = await _mediator.Send(command, cancellationToken);

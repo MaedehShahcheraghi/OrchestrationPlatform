@@ -39,22 +39,34 @@ public sealed class UpdateOperationProgressCommandHandler(
                 break;
             case InstallOperationStatus.Succeeded:
                 operation.Succeed(DateTime.UtcNow);
-
-                var alreadyInstalled = await installedSoftwareRepo.FirstOrDefaultAsync(
-                    x => x.OperatingSystemHostId == operation.OperatingSystemHostId &&
-                         x.SoftwarePackageVersionId == operation.SoftwarePackageVersionId, cancellationToken);
-
-                if (alreadyInstalled == null)
+                if (operation.OperationType == InstallOperationType.Install)
                 {
-                    var inventoryRecord = new InstalledSoftware(
-                        operation.SoftwarePackageVersionId,
-                        operation.OperatingSystemHostId,
-                        operation.Id,
-                        operation.SoftwarePackageVersion.SoftwarePackage.Name,
-                        operation.SoftwarePackageVersion.Version,
-                        DateTime.UtcNow);
+                    var alreadyInstalled = await installedSoftwareRepo.FirstOrDefaultAsync(
+                        x => x.OperatingSystemHostId == operation.OperatingSystemHostId &&
+                             x.SoftwarePackageVersionId == operation.SoftwarePackageVersionId &&
+                             x.IsActive, cancellationToken);
 
-                    await installedSoftwareRepo.AddAsync(inventoryRecord, cancellationToken);
+                    if (alreadyInstalled == null)
+                    {
+                        var inventoryRecord = new InstalledSoftware(
+                            operation.SoftwarePackageVersionId,
+                            operation.OperatingSystemHostId,
+                            operation.Id,
+                            operation.SoftwarePackageVersion.SoftwarePackage.Name,
+                            operation.SoftwarePackageVersion.Version,
+                            DateTime.UtcNow);
+
+                        await installedSoftwareRepo.AddAsync(inventoryRecord, cancellationToken);
+                    }
+                }
+                else if (operation.OperationType == InstallOperationType.Uninstall)
+                {
+                    var installedRecord = await installedSoftwareRepo.FirstOrDefaultAsync(
+                        x => x.OperatingSystemHostId == operation.OperatingSystemHostId &&
+                             x.SoftwarePackageVersionId == operation.SoftwarePackageVersionId &&
+                             x.IsActive, cancellationToken);
+
+                    if (installedRecord != null) installedRecord.MarkRemoved(DateTime.UtcNow);
                 }
 
                 break;

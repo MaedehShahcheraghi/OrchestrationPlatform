@@ -22,7 +22,7 @@ internal sealed class GetVersionsByPackageIdQueryHandler(IUnitOfWork unitOfWork)
                 x.OperatingSystemVersion,
                 x.Architecture.ToString(),
                 x.IsActive),
-            x => x.SoftwarePackageId == request.SoftwarePackageId,
+            x => x.SoftwarePackage != null && x.SoftwarePackageId == request.SoftwarePackageId,
             q => q.OrderByDescending(x => x.CreatedAtUtc),
             cancellationToken: cancellationToken);
     }
