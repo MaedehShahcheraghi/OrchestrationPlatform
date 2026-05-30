@@ -28,7 +28,7 @@ internal sealed class GetPackageVersionsForSelectQueryHandler
                 v.OperatingSystemVersion,
                 v.Architecture.ToString()
             ),
-            v => v.SoftwarePackageId == request.SoftwarePackageId && v.IsActive,
+            v => v.SoftwarePackage != null && v.SoftwarePackageId == request.SoftwarePackageId && v.IsActive,
             q => q.OrderByDescending(v => v.CreatedAtUtc),
             cancellationToken: cancellationToken
         );
