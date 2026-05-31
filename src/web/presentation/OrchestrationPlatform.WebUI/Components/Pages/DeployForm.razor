@@ -1,0 +1,256 @@
+﻿@page "/operations/install"
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Deploy Software - Orchestra</PageTitle>
+
+<div class="page-header mb-4">
+    <h1 class="page-title">Software Deployment Orchestrator</h1>
+    <p class="page-subtitle">Select a package, choose target nodes, and trigger remote installation or uninstallation</p>
+</div>
+
+<EditForm Model="@_deploymentModel" OnValidSubmit="HandleDeploymentTrigger">
+    <DataAnnotationsValidator />
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="custom-card shadow-sm h-100" style="border-radius: 16px; padding: 32px;">
+                <h4 class="fw-bold mb-4" style="color: var(--text-main);">1. Select Software</h4>
+
+                <div class="mb-4">
+                    <label class="modern-label">Software Package</label>
+                    <InputSelect ValueExpression="@(() => _deploymentModel.PackageId)"
+                                 Value="@_deploymentModel.PackageId"
+                                 ValueChanged="@((Guid? value) => OnPackageChanged(value))"
+                                 class="form-select glass-input">
+                        <option value="">-- Choose a Package --</option>
+                        @foreach (var pkg in _packages)
+                        {
+                            <option value="@pkg.Id">@pkg.Name</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => _deploymentModel.PackageId)" class="text-danger mt-1 small fw-bold" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="modern-label">Target Version</label>
+                    <InputSelect @bind-Value="_deploymentModel.VersionId" class="form-select glass-input" disabled="@(!_isVersionEnabled)">
+                        <option value="">-- Choose a Version --</option>
+                        @foreach (var v in _versions)
+                        {
+                            <option value="@v.Id">@v.Version (@v.Architecture)</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => _deploymentModel.VersionId)" class="text-danger mt-1 small fw-bold" />
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="custom-card shadow-sm h-100" style="border-radius: 16px; padding: 32px;">
+                <h4 class="fw-bold mb-3" style="color: var(--text-main);">2. Select Target Hosts</h4>
+                <p class="text-muted small mb-3">Choose one or more Linux servers to execute the operation</p>
+
+                <div class="hosts-check-list mb-2" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 12px; background-color: #f8fafc;">
+                    @foreach (var host in _hosts)
+                    {
+                        <div class="host-check-item d-flex align-items-center p-3" style="border-bottom: 1px solid var(--border-color);">
+                            <input type="checkbox" id="@host.Id" checked="@_selectedHostIds.Contains(host.Id)" @onchange="@((ChangeEventArgs e) => ToggleHostSelection(host.Id, e.Value))" class="form-check-input custom-checkbox me-3" />
+                            <label for="@host.Id" class="fw-bold m-0 flex-grow-1" style="cursor: pointer; color: var(--text-main);">
+                                🖥️ @host.Name
+                                <span class="d-block text-muted fw-normal" style="font-size: 0.8rem; font-family: monospace;">@host.IpAddress</span>
+                            </label>
+                        </div>
+                    }
+                </div>
+                @if (_showHostError)
+                {
+                    <div class="text-danger small fw-bold mt-1">Please select at least one target host.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="custom-card shadow-sm mt-2 mb-5" style="border-radius: 16px; padding: 32px; background: linear-gradient(to right, #ffffff, #fafafa);">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div class="mb-3 mb-md-0">
+                <h5 class="fw-bold mb-1" style="color: var(--text-main);">3. Trigger Orchestration Action</h5>
+                <p class="text-muted small m-0">Select the execution intent for the specified nodes and software version</p>
+            </div>
+
+            <div class="d-flex gap-3">
+                <button type="submit" @onclick='() => SetOperationType("Uninstall")' class="btn px-4 py-3 border fw-bold d-flex align-items-center" style="border-radius: 12px; background-color: #ffffff; color: var(--danger-red); box-shadow: 0 2px 4px rgba(0,0,0,0.02);" disabled="@_isSubmitting">
+                    🗑️ Remove Package
+                </button>
+
+                <button type="submit" @onclick='() => SetOperationType("Install")' class="btn text-white px-5 py-3 fw-bold d-flex align-items-center" style="background: linear-gradient(135deg, var(--primary-purple), #4f46e5); border-radius: 12px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);" disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <span>Deploying...</span>
+                    }
+                    else
+                    {
+                        <span class="me-2">⚡</span> <span>Execute Installation</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+<style>
+    .glass-input {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 0.85rem 1.25rem;
+        border-radius: 10px;
+        font-size: 0.95rem;
+    }
+
+        .glass-input:focus {
+            background-color: #ffffff;
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+            outline: none;
+        }
+
+    .modern-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        font-weight: 700;
+        display: block;
+    }
+
+    .custom-checkbox:checked {
+        background-color: var(--primary-purple) !important;
+        border-color: var(--primary-purple) !important;
+    }
+
+    .host-check-item:last-child {
+        border-bottom: none !important;
+    }
+
+    .host-check-item:hover {
+        background-color: rgba(99, 102, 241, 0.02);
+    }
+</style>
+
+@code {
+    private DeploymentFormModel _deploymentModel = new();
+    private List<PackageLookupModel> _packages = new();
+    private List<VersionLookupModel> _versions = new();
+    private List<HostLookupModel> _hosts = new();
+    private List<Guid> _selectedHostIds = new();
+
+    private bool _isVersionEnabled = false;
+    private bool _isSubmitting = false;
+    private bool _showHostError = false;
+    private string _targetAction = "Install";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInitialLookupDataAsync();
+    }
+
+    private async Task OnPackageChanged(Guid? packageId)
+    {
+        _deploymentModel.PackageId = packageId;
+        _deploymentModel.VersionId = null;
+        _versions.Clear();
+
+        if (!packageId.HasValue)
+        {
+            _isVersionEnabled = false;
+            return;
+        }
+
+        _isVersionEnabled = true;
+        await Task.Delay(400);
+
+        if (packageId.Value == _packages.FirstOrDefault(p => p.Name.Contains("Docker"))?.Id)
+        {
+            _versions = new List<VersionLookupModel>
+            {
+                new(Guid.NewGuid(), "24.0.5", "amd64"),
+                new(Guid.NewGuid(), "20.10.7", "amd64")
+            };
+        }
+        else if (packageId.Value == _packages.FirstOrDefault(p => p.Name.Contains("Nginx"))?.Id)
+        {
+            _versions = new List<VersionLookupModel>
+            {
+                new(Guid.NewGuid(), "1.18.0", "amd64")
+            };
+        }
+    }
+
+    private void ToggleHostSelection(Guid hostId, object? checkedValue)
+    {
+        var isChecked = checkedValue is bool val && val;
+        if (isChecked)
+        {
+            if (!_selectedHostIds.Contains(hostId)) _selectedHostIds.Add(hostId);
+        }
+        else
+        {
+            _selectedHostIds.Remove(hostId);
+        }
+        _showHostError = !_selectedHostIds.Any();
+    }
+
+    private void SetOperationType(string action)
+    {
+        _targetAction = action;
+    }
+
+    private async Task HandleDeploymentTrigger()
+    {
+        if (!_selectedHostIds.Any())
+        {
+            _showHostError = true;
+            return;
+        }
+
+        _showHostError = false;
+        _isSubmitting = true;
+
+        await Task.Delay(2500);
+
+        _isSubmitting = false;
+    }
+
+    private async Task LoadInitialLookupDataAsync()
+    {
+        await Task.Delay(500);
+
+        _packages = new List<PackageLookupModel>
+        {
+            new(Guid.NewGuid(), "Docker Engine"),
+            new(Guid.NewGuid(), "Nginx Web Server")
+        };
+
+        _hosts = new List<HostLookupModel>
+        {
+            new(Guid.NewGuid(), "Ubuntu-App-Server", "192.168.18.139"),
+            new(Guid.NewGuid(), "Debian-DB-Node", "192.168.18.135"),
+            new(Guid.NewGuid(), "Staging-Environment", "10.0.0.12")
+        };
+    }
+
+    public class DeploymentFormModel
+    {
+        [Required(ErrorMessage = "Software package selection is required")]
+        public Guid? PackageId { get; set; }
+
+        [Required(ErrorMessage = "Specific version selection is required")]
+        public Guid? VersionId { get; set; }
+    }
+
+    public record PackageLookupModel(Guid Id, string Name);
+    public record VersionLookupModel(Guid Id, string Version, string Architecture);
+    public record HostLookupModel(Guid Id, string Name, string IpAddress);
+}

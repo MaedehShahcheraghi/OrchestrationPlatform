@@ -1,0 +1,499 @@
+﻿@page "/packages"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Software Packages - Orchestra</PageTitle>
+
+<div class="page-header mb-4">
+    <h1 class="page-title">Software Catalog</h1>
+    <p class="page-subtitle">Manage your software packages and upload new versions (.deb artifacts)</p>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="custom-card shadow-sm h-100 p-0" style="border-radius: 16px; overflow: hidden;">
+            <div class="p-3 d-flex justify-content-between align-items-center" style="background-color: #f8fafc; border-bottom: 1px solid var(--border-color);">
+                <h6 class="m-0 fw-bold" style="color: var(--text-main);">Packages</h6>
+                <button class="btn btn-sm text-white" @onclick="OpenNewPackageModal" style="background-color: var(--primary-purple); border-radius: 6px;">
+                    + New
+                </button>
+            </div>
+
+            @if (_isLoadingPackages)
+            {
+                <div class="text-center p-4">
+                    <div class="spinner-border spinner-border-sm text-primary" style="color: var(--primary-purple) !important;"></div>
+                </div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var pkg in _packages)
+                    {
+                        <button type="button"
+                                class="list-group-item list-group-item-action package-list-item @(pkg.Id == _selectedPackageId ? "active-pkg" : "")"
+                                @onclick="() => SelectPackage(pkg)">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <span class="fw-bold">📦 @pkg.Name</span>
+                                <small class="text-muted" style="font-size: 0.75rem;">@pkg.VersionCount versions</small>
+                            </div>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-md-8 mb-4">
+        <div class="custom-card shadow-sm h-100" style="border-radius: 16px; min-height: 400px;">
+            @if (_selectedPackageId == null)
+            {
+                <div class="d-flex flex-column justify-content-center align-items-center h-100 text-muted opacity-50">
+                    <span style="font-size: 3rem; margin-bottom: 1rem;">👈</span>
+                    <h4>Select a package</h4>
+                    <p>Click on a software package from the left to view its versions.</p>
+                </div>
+            }
+            else if (_isLoadingVersions)
+            {
+                <div class="d-flex justify-content-center align-items-center h-100">
+                    <div class="spinner-border text-primary" style="color: var(--primary-purple) !important;"></div>
+                </div>
+            }
+            else
+            {
+                var selectedPkg = _packages.First(p => p.Id == _selectedPackageId);
+
+                <div class="d-flex justify-content-between align-items-center mb-4 pb-3" style="border-bottom: 1px dashed var(--border-color);">
+                    <div>
+                        <h3 class="mb-1 fw-bold" style="color: var(--text-main);">@selectedPkg.Name</h3>
+                        <span class="badge" style="background-color: rgba(99, 102, 241, 0.1); color: var(--primary-purple);">ID: @selectedPkg.Id.ToString()[..8]</span>
+                    </div>
+
+                    <button class="btn text-white shadow-sm d-flex align-items-center" @onclick="OpenUploadModal" style="background: linear-gradient(135deg, var(--primary-purple), #8b5cf6); border-radius: 8px; font-weight: 600; padding: 10px 20px;">
+                        <span class="me-2 fs-5">📤</span> Upload Artifact
+                    </button>
+                </div>
+
+                @if (!_versions.Any())
+                {
+                    <div class="text-center py-5 text-muted bg-light" style="border-radius: 12px; border: 1px dashed #cbd5e1;">
+                        <p class="mb-0">No versions uploaded for this package yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted);">
+                                <tr>
+                                    <th>Version</th>
+                                    <th>OS & Arch</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var v in _versions)
+                                {
+                                    <tr>
+                                        <td class="fw-bold">@v.Version</td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border me-1">@v.OsFamily @v.OsVersion</span>
+                                            <span class="badge bg-secondary">@v.Architecture</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge rounded-pill" style="background-color: rgba(16, 185, 129, 0.15); color: var(--success-green);">Active</span>
+                                        </td>
+                                        <td class="text-muted" style="font-size: 0.9rem;">@v.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-light border me-2" style="color: var(--primary-purple); font-weight: 600;">Edit</button>
+                                            <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@if (_showNewPackageModal)
+{
+    <div class="modern-modal-overlay" @onclick="CloseModals">
+        <div class="modern-modal-content" @onclick:stopPropagation="true">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0" style="color: var(--text-main);">Create New Package</h4>
+                <button class="btn-close-custom" @onclick="CloseModals">✕</button>
+            </div>
+
+            <EditForm Model="@_newPackageModel" OnValidSubmit="HandleCreatePackage">
+                <DataAnnotationsValidator />
+
+                <div class="mb-4">
+                    <label class="modern-label">Software Name</label>
+                    <InputText @bind-Value="_newPackageModel.Name" class="form-control glass-input" autocomplete="off" />
+                    <ValidationMessage For="@(() => _newPackageModel.Name)" class="text-danger mt-1 small fw-bold" />
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="button" class="btn btn-link text-muted me-3 text-decoration-none fw-bold" @onclick="CloseModals">Cancel</button>
+                    <button type="submit" class="btn text-white px-4 py-2" style="background-color: var(--primary-purple); border-radius: 8px; font-weight: 600;">
+                        Create Package
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (_showUploadModal)
+{
+    <div class="modern-modal-overlay" @onclick="CloseModals">
+        <div class="modern-modal-content" @onclick:stopPropagation="true" style="max-width: 650px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0" style="color: var(--text-main);">Upload Package Version</h4>
+                <button class="btn-close-custom" @onclick="CloseModals">✕</button>
+            </div>
+
+            <div class="alert mb-4" style="background-color: rgba(99, 102, 241, 0.05); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 10px; color: var(--text-muted); font-size: 0.9rem;">
+                Target Software: <strong style="color: var(--primary-purple);">@(_packages.FirstOrDefault(p => p.Id == _selectedPackageId)?.Name)</strong>
+            </div>
+
+            <EditForm Model="@_uploadModel" OnValidSubmit="HandleUploadArtifact">
+                <DataAnnotationsValidator />
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="modern-label">Version</label>
+                        <InputText @bind-Value="_uploadModel.Version" class="form-control glass-input" placeholder="24.0.5" />
+                        <ValidationMessage For="@(() => _uploadModel.Version)" class="text-danger mt-1 small fw-bold" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="modern-label">Architecture</label>
+                        <InputSelect @bind-Value="_uploadModel.Architecture" class="form-select glass-input">
+                            <option value="">Select...</option>
+                            <option value="amd64">AMD64</option>
+                            <option value="arm64">ARM64</option>
+                        </InputSelect>
+                        <ValidationMessage For="@(() => _uploadModel.Architecture)" class="text-danger mt-1 small fw-bold" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="modern-label">OS Family</label>
+                        <InputSelect @bind-Value="_uploadModel.OsFamily" class="form-select glass-input">
+                            <option value="Linux">Linux</option>
+                            <option value="Windows">Windows</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="modern-label">OS Version</label>
+                        <InputText @bind-Value="_uploadModel.OsVersion" class="form-control glass-input" placeholder="e.g., 22.04" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="modern-label">Format</label>
+                        <InputSelect @bind-Value="_uploadModel.PackageType" class="form-select glass-input">
+                            <option value="Debian">.deb</option>
+                            <option value="Rpm">.rpm</option>
+                            <option value="Tarball">.tar.gz</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="mb-4 mt-2">
+                    <label class="modern-label">Artifact File</label>
+                    <div class="file-upload-wrapper">
+                        <InputFile OnChange="OnFileChange" class="form-control glass-input file-input-custom" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(_uploadError))
+                    {
+                        <div class="text-danger mt-1 small fw-bold">@_uploadError</div>
+                    }
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="button" class="btn btn-link text-muted me-3 text-decoration-none fw-bold" @onclick="CloseModals">Cancel</button>
+                    <button type="submit" class="btn text-white px-4 py-2" style="background-color: var(--primary-purple); border-radius: 8px; font-weight: 600;" disabled="@_isUploading">
+                        @if (_isUploading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span class="me-2">☁️</span> <span>Upload Artifact</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<style>
+    .package-list-item {
+        border: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 1rem 1.25rem;
+        transition: all 0.2s ease;
+    }
+
+        .package-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .package-list-item:hover {
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+
+    .active-pkg {
+        background-color: rgba(99, 102, 241, 0.1) !important;
+        border-left: 4px solid var(--primary-purple) !important;
+        color: var(--primary-purple) !important;
+    }
+
+    .modern-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(8px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    .modern-modal-content {
+        background-color: #ffffff;
+        border-radius: 16px;
+        padding: 32px;
+        width: 100%;
+        max-width: 550px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(0);
+        animation: slideUp 0.3s ease-out;
+    }
+
+    .btn-close-custom {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+        .btn-close-custom:hover {
+            color: var(--danger-red);
+        }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .glass-input {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 0.85rem 1.25rem;
+        border-radius: 10px;
+        font-size: 0.95rem;
+    }
+
+        .glass-input:focus {
+            background-color: #ffffff;
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+            outline: none;
+        }
+
+    .modern-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        font-weight: 700;
+        display: block;
+    }
+</style>
+
+@code {
+    private bool _isLoadingPackages = true;
+    private bool _isLoadingVersions = false;
+
+    private List<PackageViewModel> _packages = new();
+    private List<VersionViewModel> _versions = new();
+
+    private Guid? _selectedPackageId;
+    private bool _showNewPackageModal = false;
+    private bool _showUploadModal = false;
+    private bool _isUploading = false;
+    private string? _uploadError;
+    private IBrowserFile? _selectedFile;
+
+    private CreatePackageFormModel _newPackageModel = new();
+    private UploadArtifactFormModel _uploadModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPackagesAsync();
+    }
+
+    private async Task LoadPackagesAsync()
+    {
+        _isLoadingPackages = true;
+        await Task.Delay(800);
+
+        _packages = new List<PackageViewModel>
+        {
+            new(Guid.NewGuid(), "Docker Engine", 2),
+            new(Guid.NewGuid(), "Nginx Web Server", 1),
+            new(Guid.NewGuid(), "Redis Cache", 0)
+        };
+
+        _isLoadingPackages = false;
+    }
+
+    private async Task SelectPackage(PackageViewModel pkg)
+    {
+        if (_selectedPackageId == pkg.Id) return;
+
+        _selectedPackageId = pkg.Id;
+        await LoadPackageVersionsAsync(pkg.Name);
+    }
+
+    private async Task LoadPackageVersionsAsync(string packageName)
+    {
+        _isLoadingVersions = true;
+        await Task.Delay(600);
+
+        if (packageName.Contains("Docker"))
+        {
+            _versions = new List<VersionViewModel>
+            {
+                new(Guid.NewGuid(), "24.0.5", "amd64", "Linux", "Any", DateTime.Now.AddDays(-20)),
+                new(Guid.NewGuid(), "20.10.7", "amd64", "Linux", "Any", DateTime.Now.AddMonths(-2))
+            };
+        }
+        else if (packageName.Contains("Nginx"))
+        {
+            _versions = new List<VersionViewModel>
+            {
+                new(Guid.NewGuid(), "1.18.0", "amd64", "Linux", "Ubuntu 22.04", DateTime.Now.AddDays(-5))
+            };
+        }
+        else
+        {
+            _versions = new();
+        }
+
+        _isLoadingVersions = false;
+    }
+
+    private void OpenNewPackageModal() => _showNewPackageModal = true;
+
+    private void OpenUploadModal()
+    {
+        _uploadModel = new UploadArtifactFormModel();
+        _selectedFile = null;
+        _uploadError = null;
+        _showUploadModal = true;
+    }
+
+    private void CloseModals()
+    {
+        _showNewPackageModal = false;
+        _showUploadModal = false;
+    }
+
+    private async Task HandleCreatePackage()
+    {
+        await Task.Delay(800);
+        CloseModals();
+        await LoadPackagesAsync();
+    }
+
+    private void OnFileChange(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.File;
+        _uploadError = null;
+    }
+
+    private async Task HandleUploadArtifact()
+    {
+        if (_selectedFile == null)
+        {
+            _uploadError = "Please select an artifact file to upload.";
+            return;
+        }
+
+        _isUploading = true;
+        await Task.Delay(2000);
+        _isUploading = false;
+
+        CloseModals();
+
+        if (_selectedPackageId.HasValue)
+        {
+            var pkg = _packages.First(p => p.Id == _selectedPackageId.Value);
+            await LoadPackageVersionsAsync(pkg.Name);
+        }
+    }
+
+    public record PackageViewModel(Guid Id, string Name, int VersionCount);
+
+    public record VersionViewModel(Guid Id, string Version, string Architecture, string OsFamily, string OsVersion, DateTime CreatedAt);
+
+    public class CreatePackageFormModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class UploadArtifactFormModel
+    {
+        [Required(ErrorMessage = "Required")]
+        public string Version { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Required")]
+        public string Architecture { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Required")]
+        public string OsFamily { get; set; } = "Linux";
+
+        [Required(ErrorMessage = "Required")]
+        public string OsVersion { get; set; } = "Any";
+
+        [Required(ErrorMessage = "Required")]
+        public string PackageType { get; set; } = "Debian";
+    }
+}

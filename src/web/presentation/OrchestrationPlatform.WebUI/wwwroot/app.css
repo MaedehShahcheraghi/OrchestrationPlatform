@@ -1,0 +1,98 @@
+﻿:root {
+    --primary-purple: #6366f1; /* بنفش نئون مدرن برای دکمه‌ها و بخش‌های اصلی */
+    --primary-hover: #4f46e5; /* بنفش تیره برای هاور */
+    --bg-dark-indigo: #0f172a; /* رنگ پس‌زمینه منوی سمت چپ (سرمه‌ای/بنفش خیلی تیره) */
+    --bg-light: #f8fafc; /* پس‌زمینه اصلی صفحات */
+    --card-bg: #ffffff; /* پس‌زمینه کارت‌ها */
+    --text-main: #1e293b; /* رنگ متن اصلی */
+    --text-muted: #64748b; /* رنگ متن‌های کم‌اهمیت‌تر */
+    --border-color: #e2e8f0; /* رنگ خطوط و مرزها */
+    --success-green: #10b981; /* سبز برای عملیات‌های موفق */
+    --danger-red: #ef4444; /* قرمز برای خطاها */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+}
+
+.dashboard-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* استایل منوی سمت چپ (Sidebar) */
+.sidebar {
+    width: 260px;
+    background-color: var(--bg-dark-indigo);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-header {
+    padding: 24px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 16px 0;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.sidebar-item a {
+    display: flex;
+    align-items: center;
+    padding: 14px 24px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+    .sidebar-item a:hover, .sidebar-item.active a {
+        color: #ffffff;
+        background-color: rgba(99, 102, 241, 0.15);
+        border-left: 4px solid var(--primary-purple);
+    }
+
+/* محتوای اصلی سمت راست */
+.main-content {
+    flex-grow: 1;
+    padding: 40px;
+}
+
+.page-header {
+    margin-bottom: 32px;
+}
+
+.page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.page-subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-top: 4px;
+}
+
+.custom-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}

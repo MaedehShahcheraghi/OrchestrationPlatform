@@ -1,12 +1,14 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using OrchestrationPlatform.Api.DTOs.Packages;
 using OrchestrationPlatform.Application.Features.Packages.Commands.CreatePackage;
 using OrchestrationPlatform.Application.Features.Packages.Commands.DeletePackage;
+using OrchestrationPlatform.Application.Features.Packages.Commands.DeleteVersion;
 using OrchestrationPlatform.Application.Features.Packages.Commands.UpdatePackage;
+using OrchestrationPlatform.Application.Features.Packages.Commands.UpdateVersion;
+using OrchestrationPlatform.Application.Features.Packages.Commands.UploadPackageVersion;
 using OrchestrationPlatform.Application.Features.Packages.Queries.GetAllPackages;
-using OrchestrationPlatform.Application.Features.SoftwarePackageVersion.Commands.CreateVersion;
-using OrchestrationPlatform.Application.Features.SoftwarePackageVersion.Commands.UpdateVersion;
-using OrchestrationPlatform.Application.Features.SoftwarePackageVersion.Queries.GetVersionsByPackageId;
+using OrchestrationPlatform.Application.Features.Packages.Queries.GetPackageVersionsForSelect;
 
 namespace OrchestrationPlatform.Api.Controllers;
 
@@ -48,15 +50,27 @@ public class PackagesController(IMediator mediator) : ControllerBase
     [HttpGet("{packageId:guid}/versions")]
     public async Task<IActionResult> GetPackageVersions(Guid packageId, CancellationToken cancellationToken)
     {
-        var result = await mediator.Send(new GetVersionsByPackageIdQuery(packageId), cancellationToken);
+        var result = await mediator.Send(new GetPackageVersionsForSelectQuery(packageId), cancellationToken);
         return Ok(result);
     }
 
     [HttpPost("{packageId:guid}/versions")]
-    public async Task<IActionResult> CreateVersion(Guid packageId, [FromBody] CreatePackageVersionCommand command,
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadVersion(Guid packageId, [FromForm] UploadPackageVersionDto request,
         CancellationToken cancellationToken)
     {
-        if (packageId != command.SoftwarePackageId) return BadRequest("Package ID mismatch");
+        var command = new UploadPackageVersionCommand(
+            packageId,
+            request.Version,
+            request.PackageType,
+            request.OperatingSystemFamily,
+            request.OperatingSystemVersion,
+            request.Architecture,
+            request.File.OpenReadStream(),
+            request.File.FileName,
+            request.File.ContentType,
+            request.File.Length);
+
         var versionId = await mediator.Send(command, cancellationToken);
         return Ok(new { Id = versionId });
     }
@@ -67,6 +81,13 @@ public class PackagesController(IMediator mediator) : ControllerBase
     {
         if (versionId != command.Id) return BadRequest("Version ID mismatch");
         await mediator.Send(command, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("versions/{versionId:guid}")]
+    public async Task<IActionResult> DeleteVersion(Guid versionId, CancellationToken cancellationToken)
+    {
+        await mediator.Send(new DeletePackageVersionCommand(versionId), cancellationToken);
         return NoContent();
     }
 }
