@@ -1,4 +1,5 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -26,11 +27,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "api", "api", "{70175963-CBD
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "presentation", "presentation", "{0360B8E7-9DAC-4DF6-B3EF-19FCAD2ACF2A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrchestrationPlatform.Web", "src\web\presentation\OrchestrationPlatform.Web\OrchestrationPlatform.Web.csproj", "{CDB28FB9-90F1-4968-9C41-EF737AB6BF82}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrchestrationPlatform.Infrastructure.Persistence", "src\Infrastructure\OrchestrationPlatform.Infrastructure.Persistence\OrchestrationPlatform.Infrastructure.Persistence.csproj", "{2F497E88-F980-4613-BF71-1516B416E9C4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrchestrationPlatform.Api", "src\web\api\OrchestrationPlatform.Api\OrchestrationPlatform.Api.csproj", "{D54496C7-B295-41B8-9E6B-E4E9D4D2BF0B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrchestrationPlatform.WebUI", "src\web\presentation\OrchestrationPlatform.WebUI\OrchestrationPlatform.WebUI.csproj", "{32664396-F039-42BF-97D6-B5BC326B24D2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -50,10 +51,6 @@ Global
 		{933EBE44-C712-49FD-B252-EEC700E72923}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{933EBE44-C712-49FD-B252-EEC700E72923}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{933EBE44-C712-49FD-B252-EEC700E72923}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CDB28FB9-90F1-4968-9C41-EF737AB6BF82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CDB28FB9-90F1-4968-9C41-EF737AB6BF82}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CDB28FB9-90F1-4968-9C41-EF737AB6BF82}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CDB28FB9-90F1-4968-9C41-EF737AB6BF82}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2F497E88-F980-4613-BF71-1516B416E9C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2F497E88-F980-4613-BF71-1516B416E9C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2F497E88-F980-4613-BF71-1516B416E9C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -62,6 +59,10 @@ Global
 		{D54496C7-B295-41B8-9E6B-E4E9D4D2BF0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D54496C7-B295-41B8-9E6B-E4E9D4D2BF0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D54496C7-B295-41B8-9E6B-E4E9D4D2BF0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32664396-F039-42BF-97D6-B5BC326B24D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32664396-F039-42BF-97D6-B5BC326B24D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32664396-F039-42BF-97D6-B5BC326B24D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32664396-F039-42BF-97D6-B5BC326B24D2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -75,8 +76,8 @@ Global
 		{933EBE44-C712-49FD-B252-EEC700E72923} = {C897F37D-FA42-42E8-AF58-822FC7CE9363}
 		{70175963-CBD6-4FBE-A552-60DECCF6FCBC} = {17C62F65-C268-4449-996B-B3533FBD00F7}
 		{0360B8E7-9DAC-4DF6-B3EF-19FCAD2ACF2A} = {17C62F65-C268-4449-996B-B3533FBD00F7}
-		{CDB28FB9-90F1-4968-9C41-EF737AB6BF82} = {0360B8E7-9DAC-4DF6-B3EF-19FCAD2ACF2A}
 		{2F497E88-F980-4613-BF71-1516B416E9C4} = {C897F37D-FA42-42E8-AF58-822FC7CE9363}
 		{D54496C7-B295-41B8-9E6B-E4E9D4D2BF0B} = {70175963-CBD6-4FBE-A552-60DECCF6FCBC}
+		{32664396-F039-42BF-97D6-B5BC326B24D2} = {0360B8E7-9DAC-4DF6-B3EF-19FCAD2ACF2A}
 	EndGlobalSection
 EndGlobal

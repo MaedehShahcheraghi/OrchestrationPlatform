@@ -1,0 +1,125 @@
+﻿@page "/hosts/add"
+@rendermode InteractiveServer
+@using OrchestrationPlatform.WebUI.Models.Hosts
+@inject NavigationManager NavManager
+
+<PageTitle>Add New Host - Orchestra</PageTitle>
+
+<div class="page-header mb-5">
+    <h1 class="page-title">Deploy New Node</h1>
+    <p class="page-subtitle">Configure connection details for your new Linux target machine</p>
+</div>
+
+@* کارت با استایل مدرن، لبه‌های گردتر و سایه نرم *@
+<div class="custom-card shadow-sm border-0 position-relative" style="max-width: 1150px; border-radius: 16px; overflow: hidden;">
+
+    @* نوار رنگی گرادیانت بالای کارت برای زیبایی فوق‌العاده *@
+    <div style="height: 6px; background: linear-gradient(90deg, var(--primary-purple), #a855f7); width: 100%; position: absolute; top: 0; left: 0;"></div>
+
+    <div class="p-4 p-md-5">
+        <h4 class="mb-4" style="color: var(--text-main); font-weight: 700;">Host Configuration</h4>
+
+        <EditForm Model="@_formModel" OnValidSubmit="HandleValidSubmit" FormName="CreateHostForm">
+            <DataAnnotationsValidator />
+
+            <div class="mb-4">
+                <label class="modern-label">
+                    <span class="me-2 opacity-75">🏷️</span> Host Identifier
+                </label>
+                <InputText @bind-Value="_formModel.Name" class="form-control glass-input" placeholder="e.g., Prod-Web-Server" autocomplete="off" />
+                <ValidationMessage For="@(() => _formModel.Name)" class="text-danger mt-1 small fw-bold" />
+            </div>
+
+            @* قرار دادن IP و Username در یک ردیف برای چیدمان حرفه‌ای‌تر *@
+            <div class="row">
+                <div class="col-md-7 mb-4">
+                    <label class="modern-label">
+                        <span class="me-2 opacity-75">🌐</span> IPv4 Address
+                    </label>
+                    <InputText @bind-Value="_formModel.IpAddress" class="form-control glass-input" placeholder="192.168.18.139" autocomplete="off" />
+                    <ValidationMessage For="@(() => _formModel.IpAddress)" class="text-danger mt-1 small fw-bold" />
+                </div>
+
+                <div class="col-md-5 mb-4">
+                    <label class="modern-label">
+                        <span class="me-2 opacity-75">👤</span> SSH User
+                    </label>
+                    <InputText @bind-Value="_formModel.Username" class="form-control glass-input" placeholder="deploy-agent" autocomplete="off" />
+                    <ValidationMessage For="@(() => _formModel.Username)" class="text-danger mt-1 small fw-bold" />
+                </div>
+            </div>
+
+            @* پیام راهنمای مدرن *@
+            <div class="alert mt-2 mb-5" style="background-color: rgba(99, 102, 241, 0.05); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 10px; color: var(--text-muted); font-size: 0.9rem;">
+                <i class="me-2 fw-bold" style="color: var(--primary-purple);">i</i>
+                Make sure the public SSH key (id_rsa.pub) is added to the target machine's <code style="color: var(--primary-purple);">authorized_keys</code> before deploying packages.
+            </div>
+
+            <div class="d-flex justify-content-end align-items-center mt-4">
+                <button type="button" class="btn btn-link text-muted me-4 text-decoration-none fw-bold" @onclick="GoBack">Cancel</button>
+
+                <button type="submit" class="btn text-white px-4 py-2" style="background-color: var(--primary-purple); border-radius: 10px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transition: all 0.3s;" disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Connecting...</span>
+                    }
+                    else
+                    {
+                        <span class="me-2">⚡</span> <span>Register Node</span>
+                    }
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@* استایل‌های اختصاصی و لوکس این صفحه *@
+<style>
+    .glass-input {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 0.85rem 1.25rem;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        transition: all 0.2s ease-in-out;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+        .glass-input:focus {
+            background-color: #ffffff;
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+            outline: none;
+        }
+
+    .modern-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        font-weight: 700;
+    }
+</style>
+
+@code {
+    private CreateHostFormModel _formModel = new();
+    private bool _isSubmitting = false;
+
+    private async Task HandleValidSubmit()
+    {
+        _isSubmitting = true;
+        await Task.Delay(1000);
+        _isSubmitting = false;
+        NavManager.NavigateTo("/hosts");
+    }
+
+    private void GoBack()
+    {
+        NavManager.NavigateTo("/hosts");
+    }
+}

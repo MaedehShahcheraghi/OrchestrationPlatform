@@ -1,0 +1,174 @@
+﻿@page "/hosts/edit/{Id:guid}"
+@rendermode InteractiveServer
+@using OrchestrationPlatform.WebUI.Models.Hosts
+@inject NavigationManager NavManager
+
+<PageTitle>Edit Host - Orchestra</PageTitle>
+
+<div class="page-header mb-5">
+    <h1 class="page-title">Edit Node Configuration</h1>
+    <p class="page-subtitle">Update connection details and status for your managed Linux target</p>
+</div>
+
+@if (_isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
+        <div class="spinner-border text-primary" style="color: var(--primary-purple) !important;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="custom-card shadow-sm border-0 position-relative" style="max-width: 1150px; border-radius: 16px; overflow: hidden;">
+
+        @* نوار رنگی بالای کارت که در حالت ویرایش می‌تونه کمی متفاوت باشه *@
+        <div style="height: 6px; background: linear-gradient(90deg, #3b82f6, var(--primary-purple)); width: 100%; position: absolute; top: 0; left: 0;"></div>
+
+        <div class="p-4 p-md-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 style="color: var(--text-main); font-weight: 700; margin: 0;">Host Details</h4>
+                <span class="badge" style="background-color: rgba(99, 102, 241, 0.1); color: var(--primary-purple); font-family: monospace;">ID: @Id.ToString()[..8]</span>
+            </div>
+
+            <EditForm Model="@_formModel" OnValidSubmit="HandleValidSubmit" FormName="UpdateHostForm">
+                <DataAnnotationsValidator />
+
+                <div class="mb-4">
+                    <label class="modern-label">
+                        <span class="me-2 opacity-75">🏷️</span> Host Identifier
+                    </label>
+                    <InputText @bind-Value="_formModel.Name" class="form-control glass-input" autocomplete="off" />
+                    <ValidationMessage For="@(() => _formModel.Name)" class="text-danger mt-1 small fw-bold" />
+                </div>
+
+                <div class="row">
+                    <div class="col-md-7 mb-4">
+                        <label class="modern-label">
+                            <span class="me-2 opacity-75">🌐</span> IPv4 Address
+                        </label>
+                        <InputText @bind-Value="_formModel.IpAddress" class="form-control glass-input" autocomplete="off" />
+                        <ValidationMessage For="@(() => _formModel.IpAddress)" class="text-danger mt-1 small fw-bold" />
+                    </div>
+
+                    <div class="col-md-5 mb-4">
+                        <label class="modern-label">
+                            <span class="me-2 opacity-75">👤</span> SSH User
+                        </label>
+                        <InputText @bind-Value="_formModel.Username" class="form-control glass-input" autocomplete="off" />
+                        <ValidationMessage For="@(() => _formModel.Username)" class="text-danger mt-1 small fw-bold" />
+                    </div>
+                </div>
+
+                @* دکمه سوئیچ (Toggle) زیبا برای تغییر وضعیت فعال/غیرفعال *@
+                <div class="mb-5 p-3" style="background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <div class="form-check form-switch d-flex align-items-center" style="padding-left: 0;">
+                        <div class="flex-grow-1">
+                            <label class="form-check-label fw-bold mb-1" style="color: var(--text-main); display: block;">Host Status</label>
+                            <small class="text-muted">If deactivated, no new software can be deployed to this host.</small>
+                        </div>
+                        <InputCheckbox @bind-Value="_formModel.IsActive" class="form-check-input custom-switch" role="switch" style="width: 3em; height: 1.5em; cursor: pointer; margin-left: 1rem;" />
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end align-items-center mt-4">
+                    <button type="button" class="btn btn-link text-muted me-4 text-decoration-none fw-bold" @onclick="GoBack">Cancel</button>
+
+                    <button type="submit" class="btn text-white px-4 py-2" style="background-color: var(--primary-purple); border-radius: 10px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transition: all 0.3s;" disabled="@_isSubmitting">
+                        @if (_isSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Saving...</span>
+                        }
+                        else
+                        {
+                            <span class="me-2">💾</span> <span>Save Changes</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<style>
+    .glass-input {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 0.85rem 1.25rem;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        transition: all 0.2s ease-in-out;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+        .glass-input:focus {
+            background-color: #ffffff;
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+            outline: none;
+        }
+
+    .modern-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        font-weight: 700;
+    }
+
+    /* استایل اختصاصی برای سوئیچ بنفش */
+    .custom-switch:checked {
+        background-color: var(--primary-purple) !important;
+        border-color: var(--primary-purple) !important;
+    }
+</style>
+
+@code {
+    // گرفتن آیدی از URL
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private UpdateHostFormModel _formModel = new();
+    private bool _isLoading = true;
+    private bool _isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // در آینده اینجا ریکوئست می‌زنیم تا دیتای سرور رو از دیتابیس بگیریم:
+        // var host = await HostHttpService.GetByIdAsync(Id);
+
+        // شبیه‌سازی دریافت اطلاعات
+        await Task.Delay(800);
+
+        _formModel = new UpdateHostFormModel
+            {
+                Id = Id,
+                Name = "Ubuntu-Web-01",
+                IpAddress = "192.168.18.139",
+                Username = "maedeh",
+                IsActive = true
+            };
+
+        _isLoading = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        _isSubmitting = true;
+        // شبیه‌سازی ارسال ریکوئست PUT به بک‌اند
+        await Task.Delay(1000);
+        _isSubmitting = false;
+
+        NavManager.NavigateTo("/hosts");
+    }
+
+    private void GoBack()
+    {
+        NavManager.NavigateTo("/hosts");
+    }
+}

@@ -1,0 +1,107 @@
+﻿@page "/hosts"
+@rendermode InteractiveServer
+@using OrchestrationPlatform.WebUI.Models.Hosts
+@using OrchestrationPlatform.WebUI.Services.Hosts
+@inject IHostHttpService HostService
+
+<PageTitle>Hosts & Nodes - Orchestra</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center page-header">
+    <div>
+        <h1 class="page-title">Managed Hosts</h1>
+        <p class="page-subtitle">View and manage your Linux infrastructure nodes</p>
+    </div>
+    <a href="/hosts/add" class="btn text-white" style="background-color: var(--primary-purple); border-radius: 8px; padding: 10px 20px; font-weight: 500; text-decoration: none;">
+        + Add New Host
+    </a>
+</div>
+
+<div class="custom-card">
+    @if (_isLoading)
+    {
+        // ----------------------------------------------------
+        // حالت ۱: در حال بارگذاری دیتا از بک‌اند (نمایش اسپینر)
+        // ----------------------------------------------------
+        <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+            <div class="spinner-border text-primary" role="status" style="color: var(--primary-purple) !important;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="ms-3 text-muted">Fetching hosts data from server...</span>
+        </div>
+    }
+    else if (!_hosts.Any())
+    {
+        // ----------------------------------------------------
+        // حالت ۲: دیتابیس خالی است
+        // ----------------------------------------------------
+        <div class="text-center py-5 text-muted">
+            <h4 style="color: var(--text-muted);">No hosts found</h4>
+            <p>You haven't added any Linux targets yet. Click "Add New Host" to get started.</p>
+        </div>
+    }
+    else
+    {
+        // ----------------------------------------------------
+        // حالت ۳: نمایش جدول مدرن دیتا
+        // ----------------------------------------------------
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th>Host Name</th>
+                        <th>IP Address</th>
+                        <th>SSH Username</th>
+                        <th>Status</th>
+                        <th>Added Date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var host in _hosts)
+                    {
+                        <tr>
+                            <td class="fw-bold" style="color: var(--text-main);">
+                                <span style="color: var(--primary-purple); margin-right: 6px;">🖥️</span>
+                                @host.Name
+                            </td>
+                            <td style="font-family: monospace; font-size: 0.95rem;">@host.IpAddress</td>
+                            <td>@host.Username</td>
+                            <td>
+                                @if (host.IsActive)
+                                {
+                                    <span class="badge rounded-pill" style="background-color: rgba(16, 185, 129, 0.15); color: var(--success-green); padding: 6px 12px;">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill" style="background-color: rgba(100, 116, 139, 0.15); color: var(--text-muted); padding: 6px 12px;">Inactive</span>
+                                }
+                            </td>
+                            <td class="text-muted">@host.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td class="text-end">
+                                <a href="/hosts/edit/@host.Id" class="btn btn-sm btn-light border me-2" style="font-weight: 600; color: var(--primary-purple);">
+                                    Edit
+                                </a>
+                                <button class="btn btn-sm btn-outline-danger">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _isLoading = true;
+    private List<HostModel> _hosts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+
+        // فراخوانی مستقیم از دیتابیس بک‌اند از طریق سرویس
+        _hosts = await HostService.GetAllHostsAsync();
+
+        _isLoading = false;
+    }
+}

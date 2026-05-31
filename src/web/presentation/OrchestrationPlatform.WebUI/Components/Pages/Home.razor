@@ -1,0 +1,136 @@
+﻿@page "/"
+
+<PageTitle>Dashboard - Orchestra</PageTitle>
+
+<div class="page-header">
+    <h1 class="page-title">Platform Overview</h1>
+    <p class="page-subtitle">Real-time status of your orchestration infrastructure</p>
+</div>
+
+@* بخش کارت‌های آماری (Stats Grid) *@
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="custom-card stats-card" style="border-bottom: 4px solid var(--primary-purple);">
+            <div class="text-muted mb-2">Total Managed Hosts</div>
+            <h2 class="mb-0">@DashboardData.TotalHosts</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="custom-card stats-card" style="border-bottom: 4px solid var(--primary-purple);">
+            <div class="text-muted mb-2">Active Packages</div>
+            <h2 class="mb-0">@DashboardData.ActivePackages</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="custom-card stats-card" style="border-bottom: 4px solid var(--success-green);">
+            <div class="text-muted mb-2">Deployment Success Rate</div>
+            <h2 class="mb-0">@DashboardData.SuccessRate%</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="custom-card stats-card" style="border-bottom: 4px solid #f59e0b;">
+            <div class="text-muted mb-2">Pending Operations</div>
+            <h2 class="mb-0">@DashboardData.PendingOperations</h2>
+        </div>
+    </div>
+</div>
+
+@* بخش جدول آخرین فعالیت‌ها (Recent Operations) *@
+<div class="custom-card">
+    <h4 class="mb-4" style="color: var(--primary-purple); font-weight: 600;">Recent Deployments</h4>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr style="color: var(--text-muted);">
+                    <th>Operation ID</th>
+                    <th>Target Host</th>
+                    <th>Software</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var op in RecentOperations)
+                {
+                    <tr>
+                        <td style="font-family: monospace; font-size: 0.9em;">@op.Id.ToString()[..8]...</td>
+                        <td class="fw-bold">@op.HostName</td>
+                        <td>@op.SoftwareName</td>
+                        <td>
+                            <span class="badge @(op.Type == "Install" ? "bg-primary" : "bg-secondary")">
+                                @op.Type
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge @(op.Status == "Succeeded" ? "bg-success" : (op.Status == "Failed" ? "bg-danger" : "bg-warning text-dark"))">
+                                @op.Status
+                            </span>
+                        </td>
+                        <td>@op.Date.ToString("yyyy-MM-dd HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    // ==========================================
+    // View Models (الگوهای کد تمیز برای فرانت‌اند)
+    // ==========================================
+
+    // ۱. مدل دیتای آماری
+    private DashboardStats DashboardData { get; set; } = new();
+
+    // ۲. لیست آخرین عملیات‌ها
+    private List<OperationRecord> RecentOperations { get; set; } = new();
+
+    // ==========================================
+    // چرخه حیات (Lifecycle) کامپوننت
+    // ==========================================
+    protected override async Task OnInitializedAsync()
+    {
+        // نکته آموزشی Blazor:
+        // در آینده اینجا متدهای API بک‌اند رو صدا می‌زنیم:
+        // DashboardData = await DashboardService.GetStatsAsync();
+
+        // فعلاً برای اینکه ظاهر داشبورد رو ببینی، دیتای Mock (آزمایشی) لود می‌کنیم:
+        await LoadMockDataAsync();
+    }
+
+    private async Task LoadMockDataAsync()
+    {
+        // شبیه‌سازی تاخیر شبکه
+        await Task.Delay(100);
+
+        DashboardData = new DashboardStats
+            {
+                TotalHosts = 12,
+                ActivePackages = 5,
+                SuccessRate = 98.5,
+                PendingOperations = 1
+            };
+
+        RecentOperations = new List<OperationRecord>
+        {
+            new(Guid.NewGuid(), "Ubuntu-Server-01", "Docker v24.0", "Install", "Succeeded", DateTime.Now.AddMinutes(-10)),
+            new(Guid.NewGuid(), "Web-Node-03", "Nginx v1.18", "Install", "Succeeded", DateTime.Now.AddHours(-2)),
+            new(Guid.NewGuid(), "DB-Main", "Redis v7.0", "Uninstall", "Succeeded", DateTime.Now.AddDays(-1)),
+            new(Guid.NewGuid(), "Test-Machine", "Docker v24.0", "Install", "Failed", DateTime.Now.AddDays(-2))
+        };
+    }
+
+    // ==========================================
+    // Classes (کلاس‌های داده محلی)
+    // ==========================================
+    public class DashboardStats
+    {
+        public int TotalHosts { get; set; }
+        public int ActivePackages { get; set; }
+        public double SuccessRate { get; set; }
+        public int PendingOperations { get; set; }
+    }
+
+    public record OperationRecord(Guid Id, string HostName, string SoftwareName, string Type, string Status, DateTime Date);
+}
