@@ -15,6 +15,7 @@ internal sealed class GetHostOperationHistoryQueryHandler(IUnitOfWork unitOfWork
         var history = await operationRepo.ListProjectedAsync(
             x => new OperationHistoryDto(
                 x.Id,
+                x.OperationType,
                 x.Status.ToString(),
                 x.ProgressPercent,
                 x.RequestedAtUtc,

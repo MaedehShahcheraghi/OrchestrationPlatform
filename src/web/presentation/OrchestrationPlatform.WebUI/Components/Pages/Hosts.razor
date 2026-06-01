@@ -1,7 +1,7 @@
 ﻿@page "/hosts"
-@rendermode InteractiveServer
-@using OrchestrationPlatform.WebUI.Models.Hosts
+@using OrchestrationPlatform.WebUI.DTOs.Hosts
 @using OrchestrationPlatform.WebUI.Services.Hosts
+@rendermode InteractiveServer
 @inject IHostHttpService HostService
 
 <PageTitle>Hosts & Nodes - Orchestra</PageTitle>
@@ -19,9 +19,7 @@
 <div class="custom-card">
     @if (_isLoading)
     {
-        // ----------------------------------------------------
-        // حالت ۱: در حال بارگذاری دیتا از بک‌اند (نمایش اسپینر)
-        // ----------------------------------------------------
+       
         <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
             <div class="spinner-border text-primary" role="status" style="color: var(--primary-purple) !important;">
                 <span class="visually-hidden">Loading...</span>
@@ -31,9 +29,7 @@
     }
     else if (!_hosts.Any())
     {
-        // ----------------------------------------------------
-        // حالت ۲: دیتابیس خالی است
-        // ----------------------------------------------------
+  
         <div class="text-center py-5 text-muted">
             <h4 style="color: var(--text-muted);">No hosts found</h4>
             <p>You haven't added any Linux targets yet. Click "Add New Host" to get started.</p>
@@ -93,13 +89,12 @@
 
 @code {
     private bool _isLoading = true;
-    private List<HostModel> _hosts = new();
+    private List<HostDto> _hosts = new();
 
     protected override async Task OnInitializedAsync()
     {
         _isLoading = true;
 
-        // فراخوانی مستقیم از دیتابیس بک‌اند از طریق سرویس
         _hosts = await HostService.GetAllHostsAsync();
 
         _isLoading = false;
