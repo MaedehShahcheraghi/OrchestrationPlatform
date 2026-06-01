@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using OrchestrationPlatform.WebUI.Enums;
 
 namespace OrchestrationPlatform.WebUI.Models.Hosts;
 
@@ -15,6 +16,21 @@ public class UpdateHostFormModel
 
     [Required(ErrorMessage = "SSH Username is required")]
     public string Username { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "SSH Port is required")]
+    [Range(1, 65535, ErrorMessage = "Port must be between 1 and 65535")]
+    public int SshPort { get; set; }
+
+    [Required(ErrorMessage = "OS Family is required")]
+    public OperatingSystemFamily? OperatingSystemFamily { get; set; }
+
+    [Required(ErrorMessage = "OS Version is required")]
+    public string OperatingSystemVersion { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Architecture is required")]
+    public CpuArchitecture? Architecture { get; set; }
+
+    public string? Description { get; set; }
 
     public bool IsActive { get; set; }
 }

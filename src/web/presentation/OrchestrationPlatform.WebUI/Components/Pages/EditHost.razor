@@ -1,7 +1,10 @@
 ﻿@page "/hosts/edit/{Id:guid}"
 @rendermode InteractiveServer
+@using OrchestrationPlatform.WebUI.Enums
 @using OrchestrationPlatform.WebUI.Models.Hosts
+@using OrchestrationPlatform.WebUI.Services.Hosts
 @inject NavigationManager NavManager
+@inject IHostHttpService HostService
 
 <PageTitle>Edit Host - Orchestra</PageTitle>
 
@@ -20,9 +23,8 @@
 }
 else
 {
-    <div class="custom-card shadow-sm border-0 position-relative" style="max-width: 1150px; border-radius: 16px; overflow: hidden;">
+    <div class="custom-card shadow-sm border-0 position-relative" style="max-width: 900px; border-radius: 16px; overflow: hidden;">
 
-        @* نوار رنگی بالای کارت که در حالت ویرایش می‌تونه کمی متفاوت باشه *@
         <div style="height: 6px; background: linear-gradient(90deg, #3b82f6, var(--primary-purple)); width: 100%; position: absolute; top: 0; left: 0;"></div>
 
         <div class="p-4 p-md-5">
@@ -60,7 +62,49 @@ else
                     </div>
                 </div>
 
-                @* دکمه سوئیچ (Toggle) زیبا برای تغییر وضعیت فعال/غیرفعال *@
+                <div class="row mb-2">
+                    <div class="col-md-3 mb-4">
+                        <label class="modern-label">SSH Port</label>
+                        <InputNumber @bind-Value="_formModel.SshPort" class="form-control glass-input" />
+                        <ValidationMessage For="@(() => _formModel.SshPort)" class="text-danger mt-1 small fw-bold" />
+                    </div>
+
+                    <div class="col-md-3 mb-4">
+                        <label class="modern-label">OS Family</label>
+                        <InputSelect @bind-Value="_formModel.OperatingSystemFamily" class="form-select glass-input">
+                            <option value="">-- Select --</option>
+                            @foreach (var os in Enum.GetValues<OperatingSystemFamily>())
+                            {
+                                <option value="@os">@os.ToString()</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => _formModel.OperatingSystemFamily)" class="text-danger mt-1 small fw-bold" />
+                    </div>
+
+                    <div class="col-md-3 mb-4">
+                        <label class="modern-label">OS Version</label>
+                        <InputText @bind-Value="_formModel.OperatingSystemVersion" class="form-control glass-input" />
+                        <ValidationMessage For="@(() => _formModel.OperatingSystemVersion)" class="text-danger mt-1 small fw-bold" />
+                    </div>
+
+                    <div class="col-md-3 mb-4">
+                        <label class="modern-label">Architecture</label>
+                        <InputSelect @bind-Value="_formModel.Architecture" class="form-select glass-input">
+                            <option value="">-- Select --</option>
+                            @foreach (var arch in Enum.GetValues<CpuArchitecture>())
+                            {
+                                <option value="@arch">@arch.ToString()</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => _formModel.Architecture)" class="text-danger mt-1 small fw-bold" />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="modern-label">Description (Optional)</label>
+                    <InputTextArea @bind-Value="_formModel.Description" class="form-control glass-input" rows="2" />
+                </div>
+
                 <div class="mb-5 p-3" style="background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
                     <div class="form-check form-switch d-flex align-items-center" style="padding-left: 0;">
                         <div class="flex-grow-1">
@@ -72,7 +116,7 @@ else
                 </div>
 
                 <div class="d-flex justify-content-end align-items-center mt-4">
-                    <button type="button" class="btn btn-link text-muted me-4 text-decoration-none fw-bold" @onclick="GoBack">Cancel</button>
+                    <a href="/hosts" class="btn btn-link text-muted me-4 text-decoration-none fw-bold">Cancel</a>
 
                     <button type="submit" class="btn text-white px-4 py-2" style="background-color: var(--primary-purple); border-radius: 10px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transition: all 0.3s;" disabled="@_isSubmitting">
                         @if (_isSubmitting)
@@ -121,7 +165,6 @@ else
         font-weight: 700;
     }
 
-    /* استایل اختصاصی برای سوئیچ بنفش */
     .custom-switch:checked {
         background-color: var(--primary-purple) !important;
         border-color: var(--primary-purple) !important;
@@ -129,7 +172,6 @@ else
 </style>
 
 @code {
-    // گرفتن آیدی از URL
     [Parameter]
     public Guid Id { get; set; }
 
@@ -139,20 +181,28 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // در آینده اینجا ریکوئست می‌زنیم تا دیتای سرور رو از دیتابیس بگیریم:
-        // var host = await HostHttpService.GetByIdAsync(Id);
+        var host = await HostService.GetHostByIdAsync(Id);
 
-        // شبیه‌سازی دریافت اطلاعات
-        await Task.Delay(800);
-
-        _formModel = new UpdateHostFormModel
-            {
-                Id = Id,
-                Name = "Ubuntu-Web-01",
-                IpAddress = "192.168.18.139",
-                Username = "maedeh",
-                IsActive = true
-            };
+        if (host != null)
+        {
+            _formModel = new UpdateHostFormModel
+                {
+                    Id = host.Id,
+                    Name = host.Name,
+                    IpAddress = host.IpAddress,
+                    SshPort = host.SshPort,
+                    Username = host.Username,
+                    OperatingSystemFamily = host.OperatingSystemFamily,
+                    OperatingSystemVersion = host.OperatingSystemVersion,
+                    Architecture = host.Architecture,
+                    Description = host.Description,
+                    IsActive = host.IsActive
+                };
+        }
+        else
+        {
+            NavManager.NavigateTo("/hosts");
+        }
 
         _isLoading = false;
     }
@@ -160,15 +210,18 @@ else
     private async Task HandleValidSubmit()
     {
         _isSubmitting = true;
-        // شبیه‌سازی ارسال ریکوئست PUT به بک‌اند
-        await Task.Delay(1000);
-        _isSubmitting = false;
-
-        NavManager.NavigateTo("/hosts");
-    }
-
-    private void GoBack()
-    {
-        NavManager.NavigateTo("/hosts");
+        try
+        {
+            await HostService.UpdateHostAsync(_formModel);
+            NavManager.NavigateTo("/hosts");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
 }

@@ -1,6 +1,6 @@
-﻿namespace OrchestrationPlatform.WebUI.Models.Hosts;
+﻿namespace OrchestrationPlatform.WebUI.DTOs.Hosts;
 
-public record HostModel(
+public record HostDto(
     Guid Id,
     string Name,
     string IpAddress,

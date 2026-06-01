@@ -9,20 +9,13 @@ namespace OrchestrationPlatform.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class OperationsController : ControllerBase
+public class OperationsController(IMediator mediator) : ControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public OperationsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
     [HttpPost("install")]
     public async Task<IActionResult> TriggerInstall([FromBody] TriggerInstallCommand command,
         CancellationToken cancellationToken)
     {
-        var operationIds = await _mediator.Send(command, cancellationToken);
+        var operationIds = await mediator.Send(command, cancellationToken);
         return Ok(new { Message = "Installation started", OperationIds = operationIds });
     }
 
@@ -30,7 +23,7 @@ public class OperationsController : ControllerBase
     public async Task<IActionResult> TriggerUnInstall([FromBody] TriggerUninstallCommand command,
         CancellationToken cancellationToken)
     {
-        var operationIds = await _mediator.Send(command, cancellationToken);
+        var operationIds = await mediator.Send(command, cancellationToken);
         return Ok(new { Message = "Installation started", OperationIds = operationIds });
     }
 
@@ -40,7 +33,7 @@ public class OperationsController : ControllerBase
     {
         var actualCommand = command with { OperationId = operationId };
 
-        await _mediator.Send(actualCommand, cancellationToken);
+        await mediator.Send(actualCommand, cancellationToken);
 
         return Ok(new { Message = "Progress updated successfully." });
     }
@@ -53,7 +46,7 @@ public class OperationsController : ControllerBase
     {
         var query = new GetHostOperationHistoryQuery(hostId, packageVersionId);
 
-        var result = await _mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(query, cancellationToken);
 
         return Ok(result);
     }

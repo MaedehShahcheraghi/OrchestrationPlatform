@@ -1,19 +1,19 @@
 ﻿@page "/hosts/add"
 @rendermode InteractiveServer
+@using OrchestrationPlatform.WebUI.Enums
 @using OrchestrationPlatform.WebUI.Models.Hosts
+@using OrchestrationPlatform.WebUI.Services.Hosts
 @inject NavigationManager NavManager
+@inject IHostHttpService HostService
 
 <PageTitle>Add New Host - Orchestra</PageTitle>
 
 <div class="page-header mb-5">
     <h1 class="page-title">Deploy New Node</h1>
-    <p class="page-subtitle">Configure connection details for your new Linux target machine</p>
+    <p class="page-subtitle">Configure connection details for your new target machine</p>
 </div>
 
-@* کارت با استایل مدرن، لبه‌های گردتر و سایه نرم *@
-<div class="custom-card shadow-sm border-0 position-relative" style="max-width: 1150px; border-radius: 16px; overflow: hidden;">
-
-    @* نوار رنگی گرادیانت بالای کارت برای زیبایی فوق‌العاده *@
+<div class="custom-card shadow-sm border-0 position-relative" style="max-width: 900px; border-radius: 16px; overflow: hidden;">
     <div style="height: 6px; background: linear-gradient(90deg, var(--primary-purple), #a855f7); width: 100%; position: absolute; top: 0; left: 0;"></div>
 
     <div class="p-4 p-md-5">
@@ -30,7 +30,6 @@
                 <ValidationMessage For="@(() => _formModel.Name)" class="text-danger mt-1 small fw-bold" />
             </div>
 
-            @* قرار دادن IP و Username در یک ردیف برای چیدمان حرفه‌ای‌تر *@
             <div class="row">
                 <div class="col-md-7 mb-4">
                     <label class="modern-label">
@@ -49,14 +48,51 @@
                 </div>
             </div>
 
-            @* پیام راهنمای مدرن *@
+            <div class="row mb-2">
+                <div class="col-md-3 mb-4">
+                    <label class="modern-label">SSH Port</label>
+                    <InputNumber @bind-Value="_formModel.SshPort" class="form-control glass-input" />
+                    <ValidationMessage For="@(() => _formModel.SshPort)" class="text-danger mt-1 small fw-bold" />
+                </div>
+
+                <div class="col-md-3 mb-4">
+                    <label class="modern-label">OS Family</label>
+                    <InputSelect @bind-Value="_formModel.OperatingSystemFamily" class="form-select glass-input">
+                        <option value="">-- Select --</option>
+                        @foreach (var os in Enum.GetValues<OperatingSystemFamily>())
+                        {
+                            <option value="@os">@os.ToString()</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => _formModel.OperatingSystemFamily)" class="text-danger mt-1 small fw-bold" />
+                </div>
+
+                <div class="col-md-3 mb-4">
+                    <label class="modern-label">OS Version</label>
+                    <InputText @bind-Value="_formModel.OperatingSystemVersion" class="form-control glass-input" placeholder="e.g., 22.04" />
+                    <ValidationMessage For="@(() => _formModel.OperatingSystemVersion)" class="text-danger mt-1 small fw-bold" />
+                </div>
+
+                <div class="col-md-3 mb-4">
+                    <label class="modern-label">Architecture</label>
+                    <InputSelect @bind-Value="_formModel.Architecture" class="form-select glass-input">
+                        <option value="">-- Select --</option>
+                        @foreach (var arch in Enum.GetValues<CpuArchitecture>())
+                        {
+                            <option value="@arch">@arch.ToString()</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => _formModel.Architecture)" class="text-danger mt-1 small fw-bold" />
+                </div>
+            </div>
+
             <div class="alert mt-2 mb-5" style="background-color: rgba(99, 102, 241, 0.05); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 10px; color: var(--text-muted); font-size: 0.9rem;">
                 <i class="me-2 fw-bold" style="color: var(--primary-purple);">i</i>
-                Make sure the public SSH key (id_rsa.pub) is added to the target machine's <code style="color: var(--primary-purple);">authorized_keys</code> before deploying packages.
+                Make sure the public SSH key is added to the target machine's <code style="color: var(--primary-purple);">authorized_keys</code> before deploying packages.
             </div>
 
             <div class="d-flex justify-content-end align-items-center mt-4">
-                <button type="button" class="btn btn-link text-muted me-4 text-decoration-none fw-bold" @onclick="GoBack">Cancel</button>
+                <a href="/hosts" class="btn btn-link text-muted me-4 text-decoration-none fw-bold">Cancel</a>
 
                 <button type="submit" class="btn text-white px-4 py-2" style="background-color: var(--primary-purple); border-radius: 10px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transition: all 0.3s;" disabled="@_isSubmitting">
                     @if (_isSubmitting)
@@ -74,7 +110,6 @@
     </div>
 </div>
 
-@* استایل‌های اختصاصی و لوکس این صفحه *@
 <style>
     .glass-input {
         background-color: #f8fafc;
@@ -113,13 +148,18 @@
     private async Task HandleValidSubmit()
     {
         _isSubmitting = true;
-        await Task.Delay(1000);
-        _isSubmitting = false;
-        NavManager.NavigateTo("/hosts");
-    }
-
-    private void GoBack()
-    {
-        NavManager.NavigateTo("/hosts");
+        try
+        {
+            await HostService.CreateHostAsync(_formModel);
+            NavManager.NavigateTo("/hosts");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
 }
