@@ -4,6 +4,12 @@ namespace OrchestrationPlatform.Domain.Entities;
 
 public sealed class SoftwarePackage : AuditableEntity
 {
+    #region Navigation Properties
+
+    public ICollection<SoftwarePackageVersion> Versions { get; private set; } = [];
+
+    #endregion
+
     #region Constructors
 
     private SoftwarePackage()
@@ -26,12 +32,6 @@ public sealed class SoftwarePackage : AuditableEntity
     public string? Description { get; private set; }
 
     public bool IsActive { get; private set; }
-
-    #endregion
-
-    #region Navigation Properties
-
-    public ICollection<SoftwarePackageVersion> Versions { get; private set; } = [];
 
     #endregion
 

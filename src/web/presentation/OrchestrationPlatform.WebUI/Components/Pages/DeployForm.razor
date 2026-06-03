@@ -1,22 +1,44 @@
 ﻿@page "/operations/install"
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(false))
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.SignalR.Client
+@using OrchestrationPlatform.WebUI.DTOs.Hosts
+@using OrchestrationPlatform.WebUI.DTOs.Operations
+@using OrchestrationPlatform.WebUI.DTOs.Packages
+@using OrchestrationPlatform.WebUI.Enums
+@using OrchestrationPlatform.WebUI.Models.Common
+@using OrchestrationPlatform.WebUI.Models.Packages
+@using OrchestrationPlatform.WebUI.Services.Hosts
+@using OrchestrationPlatform.WebUI.Services.Operations
+@using OrchestrationPlatform.WebUI.Services.Packages
+@implements IAsyncDisposable
+@inject IConfiguration Config
+@inject IHostHttpService HostService
+@inject IPackageHttpService PackageService
+@inject IOperationHttpService OperationService
 
 <PageTitle>Deploy Software - Orchestra</PageTitle>
 
 <div class="page-header mb-4">
     <h1 class="page-title">Software Deployment Orchestrator</h1>
-    <p class="page-subtitle">Select a package, choose target nodes, and trigger remote installation or uninstallation</p>
+    <p class="page-subtitle">Select a package, choose target nodes, and trigger remote operations</p>
 </div>
+
+@if (!string.IsNullOrEmpty(_pageMessage))
+{
+    <div class="alert @(_isError ? "alert-danger" : "alert-success") alert-dismissible fade show mb-4 shadow-sm" style="border-radius: 12px;">
+        @_pageMessage
+        <button type="button" class="btn-close" @onclick="() => _pageMessage = null"></button>
+    </div>
+}
 
 <EditForm Model="@_deploymentModel" OnValidSubmit="HandleDeploymentTrigger">
     <DataAnnotationsValidator />
 
     <div class="row">
-        <div class="col-md-6 mb-4">
+        <div class="col-md-5 mb-4">
             <div class="custom-card shadow-sm h-100" style="border-radius: 16px; padding: 32px;">
                 <h4 class="fw-bold mb-4" style="color: var(--text-main);">1. Select Software</h4>
-
                 <div class="mb-4">
                     <label class="modern-label">Software Package</label>
                     <InputSelect ValueExpression="@(() => _deploymentModel.PackageId)"
@@ -31,7 +53,6 @@
                     </InputSelect>
                     <ValidationMessage For="@(() => _deploymentModel.PackageId)" class="text-danger mt-1 small fw-bold" />
                 </div>
-
                 <div class="mb-3">
                     <label class="modern-label">Target Version</label>
                     <InputSelect @bind-Value="_deploymentModel.VersionId" class="form-select glass-input" disabled="@(!_isVersionEnabled)">
@@ -46,26 +67,56 @@
             </div>
         </div>
 
-        <div class="col-md-6 mb-4">
+        @* 2. Target Hosts *@
+        <div class="col-md-7 mb-4">
             <div class="custom-card shadow-sm h-100" style="border-radius: 16px; padding: 32px;">
-                <h4 class="fw-bold mb-3" style="color: var(--text-main);">2. Select Target Hosts</h4>
-                <p class="text-muted small mb-3">Choose one or more Linux servers to execute the operation</p>
-
-                <div class="hosts-check-list mb-2" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 12px; background-color: #f8fafc;">
-                    @foreach (var host in _hosts)
-                    {
-                        <div class="host-check-item d-flex align-items-center p-3" style="border-bottom: 1px solid var(--border-color);">
-                            <input type="checkbox" id="@host.Id" checked="@_selectedHostIds.Contains(host.Id)" @onchange="@((ChangeEventArgs e) => ToggleHostSelection(host.Id, e.Value))" class="form-check-input custom-checkbox me-3" />
-                            <label for="@host.Id" class="fw-bold m-0 flex-grow-1" style="cursor: pointer; color: var(--text-main);">
-                                🖥️ @host.Name
-                                <span class="d-block text-muted fw-normal" style="font-size: 0.8rem; font-family: monospace;">@host.IpAddress</span>
-                            </label>
-                        </div>
-                    }
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="fw-bold m-0" style="color: var(--text-main);">2. Target Hosts</h4>
+                    <span class="badge bg-light text-dark border">@_selectedHostIds.Count Selected</span>
                 </div>
+                <div class="mb-3 position-relative">
+                    <svg class="position-absolute" style="left: 12px; top: 12px; color: #94a3b8;" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <input type="text" class="form-control glass-input" style="padding-left: 36px;" placeholder="Search by name or IP..." @bind="_searchTerm" @bind:event="oninput" />
+                </div>
+
+                @if (_isLoadingHosts)
+                {
+                    <div class="text-center py-4"><span class="spinner-border text-primary"></span></div>
+                }
+                else
+                {
+                    <div class="hosts-check-list mb-3" style="border: 1px solid var(--border-color); border-radius: 12px; background-color: #f8fafc; min-height: 250px;">
+                        @if (!PaginatedHosts.Any())
+                        {
+                            <div class="text-center py-4 text-muted">No hosts match your search.</div>
+                        }
+                        @foreach (var host in PaginatedHosts)
+                        {
+                            <div class="host-check-item d-flex align-items-center p-3" style="border-bottom: 1px solid var(--border-color);">
+                                <input type="checkbox" id="@host.Id" checked="@_selectedHostIds.Contains(host.Id)" @onchange="@(e => ToggleHostSelection(host.Id, e.Value))" class="form-check-input custom-checkbox me-3" />
+                                <label for="@host.Id" class="fw-bold m-0 flex-grow-1 d-flex align-items-center" style="cursor: pointer; color: var(--text-main);">
+                                    <svg class="me-2 text-secondary" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
+                                    <div>
+                                        @host.Name
+                                        <span class="d-block text-muted fw-normal" style="font-size: 0.8rem; font-family: monospace;">@host.IpAddress</span>
+                                    </div>
+                                </label>
+                                <button type="button" class="btn btn-sm btn-light border text-primary d-flex align-items-center" @onclick="() => OpenHostDetailsModal(host)" title="View Details">
+                                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="me-1"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Info
+                                </button>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button type="button" class="btn btn-sm btn-outline-secondary fw-bold" @onclick="PrevPage" disabled="@(_currentPage == 1)">← Prev</button>
+                        <span class="text-muted small fw-bold">Page @_currentPage of @TotalPages</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary fw-bold" @onclick="NextPage" disabled="@(_currentPage >= TotalPages)">Next →</button>
+                    </div>
+                }
                 @if (_showHostError)
                 {
-                    <div class="text-danger small fw-bold mt-1">Please select at least one target host.</div>
+                    <div class="text-danger small fw-bold mt-2">Please select at least one target host.</div>
                 }
             </div>
         </div>
@@ -77,21 +128,22 @@
                 <h5 class="fw-bold mb-1" style="color: var(--text-main);">3. Trigger Orchestration Action</h5>
                 <p class="text-muted small m-0">Select the execution intent for the specified nodes and software version</p>
             </div>
-
             <div class="d-flex gap-3">
-                <button type="submit" @onclick='() => SetOperationType("Uninstall")' class="btn px-4 py-3 border fw-bold d-flex align-items-center" style="border-radius: 12px; background-color: #ffffff; color: var(--danger-red); box-shadow: 0 2px 4px rgba(0,0,0,0.02);" disabled="@_isSubmitting">
-                    🗑️ Remove Package
+                <button type="submit" @onclick='() => SetOperationType("Uninstall")' class="btn px-4 py-3 border fw-bold d-flex align-items-center" style="border-radius: 12px; background-color: #ffffff; color: var(--danger-red);" disabled="@_isSubmitting">
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="me-2"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg> Remove
                 </button>
-
                 <button type="submit" @onclick='() => SetOperationType("Install")' class="btn text-white px-5 py-3 fw-bold d-flex align-items-center" style="background: linear-gradient(135deg, var(--primary-purple), #4f46e5); border-radius: 12px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);" disabled="@_isSubmitting">
                     @if (_isSubmitting)
                     {
-                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                        <span>Deploying...</span>
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+
+                        <span>Executing...</span>
                     }
                     else
                     {
-                        <span class="me-2">⚡</span> <span>Execute Installation</span>
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="me-2"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+
+                        <span>Execute Install</span>
                     }
                 </button>
             </div>
@@ -99,61 +151,277 @@
     </div>
 </EditForm>
 
+@* Live Console *@
+@if (_showLiveConsole)
+{
+    var totalProgress = _hostProgress.Any() ? (int)_hostProgress.Values.Average() : 0;
+    <div class="custom-card shadow-lg mt-4 mb-5" style="border-radius: 16px; padding: 32px; background-color: #0f172a; border: 1px solid #1e293b;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold m-0 text-white d-flex align-items-center">
+                <span class="spinner-grow spinner-grow-sm me-3 text-success" role="status"></span> Live Deployment Console
+            </h5>
+            <button type="button" class="btn-close btn-close-white" @onclick="() => _showLiveConsole = false"></button>
+        </div>
+        <div class="progress mb-4" style="height: 28px; border-radius: 12px; background-color: #1e293b;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: @totalProgress%; background: linear-gradient(90deg, #8b5cf6, #3b82f6); font-weight: 800; font-size: 1rem;">
+                @totalProgress%
+            </div>
+        </div>
+        <div class="terminal-window p-3" style="background-color: #020617; border-radius: 12px; border: 1px solid #334155; height: 350px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 0.9rem;">
+            @foreach (var log in _liveLogs)
+            {
+                <div class="mb-1" style="border-bottom: 1px dashed #1e293b; padding-bottom: 6px; margin-bottom: 6px;">
+                    <span style="color: #64748b;">[@log.Timestamp.ToString("HH:mm:ss")]</span>
+                    <span style="color: #38bdf8; font-weight: bold;">[@(_operationToHostNameMap.TryGetValue(log.Payload.OperationId, out var name) ? name : log.Payload.OperationId.ToString()[..8])]</span>
+                    <span class="@(log.Payload.Status.Contains("Fail") ? "text-danger fw-bold ms-1" : log.Payload.Status.Contains("Success") ? "text-success fw-bold ms-1" : "text-warning ms-1")">[@log.Payload.Status]</span>
+                    <span class="ms-2 text-light">@log.Payload.Message</span>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (_showHostDetailsModal && _selectedHostForDetails != null)
+{
+    <div class="modern-modal-overlay" @onclick="CloseHostDetailsModal">
+        <div class="modern-modal-content" @onclick:stopPropagation="true" style="max-width: 850px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0 d-flex align-items-center" style="color: var(--text-main);">
+                    <svg class="me-2 text-secondary" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
+                    @_selectedHostForDetails.Name Details
+                </h4>
+                <button class="btn-close-custom" @onclick="CloseHostDetailsModal">✕</button>
+            </div>
+
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item">
+                    <a class="nav-link @(_activeTab == "History" ? "active fw-bold text-primary" : "text-muted")" style="cursor: pointer;" @onclick='() => SetActiveTab("History")'>Operation History</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(_activeTab == "Installed" ? "active fw-bold text-primary" : "text-muted")" style="cursor: pointer;" @onclick='() => SetActiveTab("Installed")'>Installed Softwares</a>
+                </li>
+            </ul>
+
+            <div style="max-height: 500px; overflow-y: auto; overflow-x: hidden;">
+                @if (_isLoadingHistory)
+                {
+                    <div class="text-center py-4"><span class="spinner-border text-primary"></span></div>
+                }
+                else if (_activeTab == "History")
+                {
+                    @if (!_historyPageResult.Items.Any())
+                    {
+                        <div class="text-center py-4 text-muted border rounded bg-light">No operation history found.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead class="text-muted small text-uppercase bg-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                        <th>Software</th>
+                                        <th>Status</th>
+                                        <th class="text-center">Logs</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var log in _historyPageResult.Items)
+                                    {
+                                        <tr>
+                                            <td class="small text-muted">@log.RequestedAtUtc.ToString("MMM dd, HH:mm")</td>
+                                            <td class="fw-bold">@log.operationType.ToString()</td>
+                                            <td>@log.PackageNameSnapshot <span class="badge bg-secondary">@log.VersionSnapshot</span></td>
+                                            <td>
+                                                <span class="@(log.Status == InstallOperationStatus.Succeeded ? "badge bg-success" : log.Status == InstallOperationStatus.Failed ? "badge bg-danger" : "badge bg-warning text-dark")">
+                                                    @log.Status.ToString()
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                <button class="btn btn-sm btn-outline-secondary py-0 px-2" @onclick="() => ToggleOperationLogs(log.OperationId)">
+                                                    @if (_expandedLogOperationId == log.OperationId)
+                                                    {
+                                                        <span>▲</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                                                    }
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        @if (_expandedLogOperationId == log.OperationId)
+                                        {
+                                            <tr>
+                                                <td colspan="5" class="p-0 border-0">
+                                                    <div class="bg-dark text-light p-3 m-2 rounded" style="font-family: 'Consolas', monospace; font-size: 0.85rem; max-height: 250px; overflow-y: auto;">
+                                                        @if (_selectedOperationLogs == null)
+                                                        {
+                                                            <div class="text-center text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading logs...</div>
+                                                        }
+                                                        else if (!_selectedOperationLogs.Any())
+                                                        {
+                                                            <div class="text-muted fst-italic">No detailed logs found.</div>
+                                                        }
+                                                        else
+                                                        {
+                                                            @foreach (var detailedLog in _selectedOperationLogs)
+                                                            {
+                                                                <div class="mb-1" style="border-bottom: 1px dashed #334155; padding-bottom: 4px;">
+                                                                    <span class="text-secondary">[@detailedLog.LoggedAtUtc.ToString("HH:mm:ss")]</span>
+                                                                    <span class="@(detailedLog.Level == OperationLogLevel.Error ? "text-danger fw-bold" : detailedLog.Level == OperationLogLevel.Warning ? "text-warning" : "text-info")">[@detailedLog.Level]</span>
+                                                                    <span class="ms-1">@detailedLog.Message</span>
+                                                                </div>
+                                                            }
+                                                        }
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @* Server-Side Pagination Controls for History *@
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                            <button class="btn btn-sm btn-outline-secondary fw-bold" @onclick="PrevHistoryPage" disabled="@(!_historyPageResult.HasPreviousPage)">← Prev</button>
+                            <span class="text-muted small fw-bold">Page @(_historyPageResult.PageNumber == 0 ? 1 : _historyPageResult.PageNumber) of @(_historyPageResult.TotalPages == 0 ? 1 : _historyPageResult.TotalPages)</span>
+                            <button class="btn btn-sm btn-outline-secondary fw-bold" @onclick="NextHistoryPage" disabled="@(!_historyPageResult.HasNextPage)">Next →</button>
+                        </div>
+                    }
+                }
+                else if (_activeTab == "Installed")
+                {
+                    @if (!_installedSoftwares.Any())
+                    {
+                        <div class="text-center py-4 text-muted border rounded bg-light">No software installed on this host yet.</div>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush border rounded">
+                            @foreach (var software in _installedSoftwares)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                    <div class="d-flex align-items-center">
+                                        <svg class="me-3 text-primary" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                                        <span class="fw-bold text-dark">@software.PackageName</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge rounded-pill me-2" style="background-color: rgba(99, 102, 241, 0.1); color: var(--primary-purple); border: 1px solid var(--primary-purple);">v @software.Version</span>
+                                        <span class="d-block text-muted small mt-1">Installed: @software.InstalledAtUtc.ToString("MMM dd, yyyy")</span>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+
 <style>
-    .glass-input {
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        padding: 0.85rem 1.25rem;
-        border-radius: 10px;
-        font-size: 0.95rem;
+    .host-check-item:last-child {
+        border-bottom: none !important;
     }
 
-        .glass-input:focus {
-            background-color: #ffffff;
-            border-color: var(--primary-purple);
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
-            outline: none;
-        }
-
-    .modern-label {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--text-muted);
-        margin-bottom: 8px;
-        font-weight: 700;
-        display: block;
+    .host-check-item:hover {
+        background-color: rgba(99, 102, 241, 0.04);
     }
 
     .custom-checkbox:checked {
         background-color: var(--primary-purple) !important;
         border-color: var(--primary-purple) !important;
     }
-
-    .host-check-item:last-child {
-        border-bottom: none !important;
-    }
-
-    .host-check-item:hover {
-        background-color: rgba(99, 102, 241, 0.02);
-    }
 </style>
 
 @code {
     private DeploymentFormModel _deploymentModel = new();
-    private List<PackageLookupModel> _packages = new();
-    private List<VersionLookupModel> _versions = new();
-    private List<HostLookupModel> _hosts = new();
-    private List<Guid> _selectedHostIds = new();
+    private List<PackageDto> _packages = new();
+    private List<PackageVersionDto> _versions = new();
+    private List<HostDto> _allHosts = new();
+    private readonly List<Guid> _selectedHostIds = new();
 
-    private bool _isVersionEnabled = false;
-    private bool _isSubmitting = false;
-    private bool _showHostError = false;
+    private bool _isLoadingHosts = true;
+    private bool _isVersionEnabled;
+    private bool _isSubmitting;
+    private bool _showHostError;
     private string _targetAction = "Install";
+    private string? _pageMessage;
+    private bool _isError;
+
+    private string _searchTerm = string.Empty;
+    private readonly int _pageSize = 5;
+    private int _currentPage = 1;
+
+    private bool _showHostDetailsModal;
+    private HostDto? _selectedHostForDetails;
+    private string _activeTab = "History";
+    private bool _isLoadingHistory;
+
+    private PagedResult<OperationHistoryDto> _historyPageResult = new();
+
+    private List<InstalledSoftwareDto> _installedSoftwares = new();
+    private Guid? _expandedLogOperationId;
+    private List<OperationLogDto>? _selectedOperationLogs;
+
+    private IEnumerable<HostDto> FilteredHosts => _allHosts
+        .Where(h => string.IsNullOrWhiteSpace(_searchTerm) ||
+                    h.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    h.IpAddress.Contains(_searchTerm));
+
+    private IEnumerable<HostDto> PaginatedHosts => FilteredHosts.Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling((double)FilteredHosts.Count() / _pageSize));
+
+    private HubConnection? _hubConnection;
+    private bool _showLiveConsole;
+    private readonly List<OperationLogEntry> _liveLogs = new();
+    private readonly Dictionary<Guid, int> _hostProgress = new();
+    private readonly List<Guid> _activeOperationIds = new();
+    private readonly Dictionary<Guid, string> _operationToHostNameMap = new();
+
+    public class OperationUpdatePayload
+    {
+        public Guid OperationId { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public int Progress { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+    public record OperationLogEntry(DateTime Timestamp, OperationUpdatePayload Payload);
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadInitialLookupDataAsync();
+        try
+        {
+            _packages = await PackageService.GetAllPackagesAsync();
+            _allHosts = await HostService.GetAllHostsAsync();
+        }
+        finally
+        {
+            _isLoadingHosts = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var baseUrl = Config.GetValue<string>("ApiSettings:BaseUrl") ?? "http://localhost:5232/";
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(baseUrl.TrimEnd('/') + "/hubs/operation")
+                .WithAutomaticReconnect()
+                .Build();
+
+            _hubConnection.On<OperationUpdatePayload>("ReceiveOperationUpdate", payload =>
+            {
+                _liveLogs.Insert(0, new OperationLogEntry(DateTime.Now, payload));
+                _hostProgress[payload.OperationId] = payload.Progress;
+                InvokeAsync(StateHasChanged);
+            });
+            await _hubConnection.StartAsync();
+        }
     }
 
     private async Task OnPackageChanged(Guid? packageId)
@@ -167,90 +435,171 @@
             _isVersionEnabled = false;
             return;
         }
-
         _isVersionEnabled = true;
-        await Task.Delay(400);
-
-        if (packageId.Value == _packages.FirstOrDefault(p => p.Name.Contains("Docker"))?.Id)
-        {
-            _versions = new List<VersionLookupModel>
-            {
-                new(Guid.NewGuid(), "24.0.5", "amd64"),
-                new(Guid.NewGuid(), "20.10.7", "amd64")
-            };
-        }
-        else if (packageId.Value == _packages.FirstOrDefault(p => p.Name.Contains("Nginx"))?.Id)
-        {
-            _versions = new List<VersionLookupModel>
-            {
-                new(Guid.NewGuid(), "1.18.0", "amd64")
-            };
-        }
+        _versions = await PackageService.GetPackageVersionsAsync(packageId.Value);
     }
+
+    private void NextPage() { if (_currentPage < TotalPages) _currentPage++; }
+    private void PrevPage() { if (_currentPage > 1) _currentPage--; }
 
     private void ToggleHostSelection(Guid hostId, object? checkedValue)
     {
-        var isChecked = checkedValue is bool val && val;
-        if (isChecked)
-        {
-            if (!_selectedHostIds.Contains(hostId)) _selectedHostIds.Add(hostId);
-        }
-        else
-        {
-            _selectedHostIds.Remove(hostId);
-        }
+        if (checkedValue is bool val && val) { if (!_selectedHostIds.Contains(hostId)) _selectedHostIds.Add(hostId); }
+        else { _selectedHostIds.Remove(hostId); }
         _showHostError = !_selectedHostIds.Any();
     }
 
-    private void SetOperationType(string action)
+    private void SetOperationType(string action) => _targetAction = action;
+
+    private async Task OpenHostDetailsModal(HostDto host)
     {
-        _targetAction = action;
+        _selectedHostForDetails = host;
+        _showHostDetailsModal = true;
+        _activeTab = "History";
+        _expandedLogOperationId = null;
+        _selectedOperationLogs = null;
+        _installedSoftwares.Clear();
+
+        await LoadHistoryData(1);
+    }
+
+    private async Task SetActiveTab(string tab)
+    {
+        if (_activeTab == tab) return;
+        _activeTab = tab;
+        _expandedLogOperationId = null;
+        _selectedOperationLogs = null;
+
+        if (tab == "Installed" && _selectedHostForDetails != null && !_installedSoftwares.Any())
+        {
+            _isLoadingHistory = true;
+            StateHasChanged();
+            _installedSoftwares = await HostService.GetInstalledSoftwaresAsync(_selectedHostForDetails.Id);
+            _isLoadingHistory = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadHistoryData(int page)
+    {
+        _isLoadingHistory = true;
+        StateHasChanged();
+
+        _historyPageResult = await OperationService.GetHostHistoryAsync(_selectedHostForDetails!.Id, page, 5);
+
+        _isLoadingHistory = false;
+        StateHasChanged();
+    }
+
+    private async Task PrevHistoryPage()
+    {
+        if (_historyPageResult.HasPreviousPage)
+            await LoadHistoryData(_historyPageResult.PageNumber - 1);
+    }
+
+    private async Task NextHistoryPage()
+    {
+        if (_historyPageResult.HasNextPage)
+            await LoadHistoryData(_historyPageResult.PageNumber + 1);
+    }
+
+    private async Task ToggleOperationLogs(Guid operationId)
+    {
+        if (_expandedLogOperationId == operationId)
+        {
+            _expandedLogOperationId = null;
+            _selectedOperationLogs = null;
+        }
+        else
+        {
+            _expandedLogOperationId = operationId;
+            _selectedOperationLogs = null;
+            StateHasChanged();
+            _selectedOperationLogs = await OperationService.GetOperationLogsAsync(operationId);
+        }
+    }
+
+    private void CloseHostDetailsModal()
+    {
+        _showHostDetailsModal = false;
+        _selectedHostForDetails = null;
     }
 
     private async Task HandleDeploymentTrigger()
     {
-        if (!_selectedHostIds.Any())
-        {
-            _showHostError = true;
-            return;
-        }
+        if (!_selectedHostIds.Any()) { _showHostError = true; return; }
+        if (!_deploymentModel.VersionId.HasValue) return;
 
         _showHostError = false;
         _isSubmitting = true;
+        _pageMessage = null;
 
-        await Task.Delay(2500);
+        try
+        {
+            var request = new InstallOperationDto(_deploymentModel.VersionId.Value, _selectedHostIds);
+            _showLiveConsole = true;
+            _liveLogs.Clear();
+            _hostProgress.Clear();
+            _activeOperationIds.Clear();
+            _operationToHostNameMap.Clear();
 
-        _isSubmitting = false;
+            Dictionary<Guid, Guid> operationMap;
+            if (_targetAction == "Install")
+            {
+                operationMap = await OperationService.TriggerInstallAsync(request);
+                _pageMessage = "Installation commands dispatched to nodes.";
+            }
+            else
+            {
+                operationMap = await OperationService.TriggerUninstallAsync(request);
+                _pageMessage = "Uninstallation commands dispatched to nodes.";
+            }
+
+            if (_hubConnection is not null && _hubConnection.State == HubConnectionState.Connected)
+            {
+                foreach (var kvp in operationMap)
+                {
+                    var opId = kvp.Key;
+                    var hostId = kvp.Value;
+                    _operationToHostNameMap[opId] = _allHosts.FirstOrDefault(h => h.Id == hostId)?.Name ?? "Unknown Node";
+                    _hostProgress[opId] = 0;
+                    _activeOperationIds.Add(opId);
+                    await _hubConnection.SendAsync("JoinOperationGroup", opId.ToString());
+                }
+            }
+
+            _isError = false;
+            _selectedHostIds.Clear();
+            _deploymentModel = new DeploymentFormModel();
+            _isVersionEnabled = false;
+            _versions.Clear();
+        }
+        catch (Exception ex)
+        {
+            _isError = true;
+            _pageMessage = "Failed to trigger operation: " + ex.Message;
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
 
-    private async Task LoadInitialLookupDataAsync()
+    public async ValueTask DisposeAsync()
     {
-        await Task.Delay(500);
-
-        _packages = new List<PackageLookupModel>
+        if (_hubConnection is not null)
         {
-            new(Guid.NewGuid(), "Docker Engine"),
-            new(Guid.NewGuid(), "Nginx Web Server")
-        };
-
-        _hosts = new List<HostLookupModel>
-        {
-            new(Guid.NewGuid(), "Ubuntu-App-Server", "192.168.18.139"),
-            new(Guid.NewGuid(), "Debian-DB-Node", "192.168.18.135"),
-            new(Guid.NewGuid(), "Staging-Environment", "10.0.0.12")
-        };
+            foreach (var opId in _activeOperationIds)
+            {
+                try { await _hubConnection.SendAsync("LeaveOperationGroup", opId.ToString()); } catch { }
+            }
+            await _hubConnection.DisposeAsync();
+        }
     }
 
     public class DeploymentFormModel
     {
-        [Required(ErrorMessage = "Software package selection is required")]
-        public Guid? PackageId { get; set; }
-
-        [Required(ErrorMessage = "Specific version selection is required")]
-        public Guid? VersionId { get; set; }
+        [Required] public Guid? PackageId { get; set; }
+        [Required] public Guid? VersionId { get; set; }
     }
-
-    public record PackageLookupModel(Guid Id, string Name);
-    public record VersionLookupModel(Guid Id, string Version, string Architecture);
-    public record HostLookupModel(Guid Id, string Name, string IpAddress);
 }

@@ -7,7 +7,6 @@
     <p class="page-subtitle">Real-time status of your orchestration infrastructure</p>
 </div>
 
-@* بخش کارت‌های آماری (Stats Grid) *@
 <div class="row mb-4">
     <div class="col-md-3">
         <div class="custom-card stats-card" style="border-bottom: 4px solid var(--primary-purple);">
@@ -35,82 +34,68 @@
     </div>
 </div>
 
-@* بخش جدول آخرین فعالیت‌ها (Recent Operations) *@
 <div class="custom-card">
     <h4 class="mb-4" style="color: var(--primary-purple); font-weight: 600;">Recent Deployments</h4>
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
-                <tr style="color: var(--text-muted);">
-                    <th>Operation ID</th>
-                    <th>Target Host</th>
-                    <th>Software</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                </tr>
+            <tr style="color: var(--text-muted);">
+                <th>Operation ID</th>
+                <th>Target Host</th>
+                <th>Software</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
             </thead>
             <tbody>
-                @foreach (var op in RecentOperations)
-                {
-                    <tr>
-                        <td style="font-family: monospace; font-size: 0.9em;">@op.Id.ToString()[..8]...</td>
-                        <td class="fw-bold">@op.HostName</td>
-                        <td>@op.SoftwareName</td>
-                        <td>
-                            <span class="badge @(op.Type == "Install" ? "bg-primary" : "bg-secondary")">
-                                @op.Type
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge @(op.Status == "Succeeded" ? "bg-success" : (op.Status == "Failed" ? "bg-danger" : "bg-warning text-dark"))">
-                                @op.Status
-                            </span>
-                        </td>
-                        <td>@op.Date.ToString("yyyy-MM-dd HH:mm")</td>
-                    </tr>
-                }
+            @foreach (var op in RecentOperations)
+            {
+                <tr>
+                    <td style="font-family: monospace; font-size: 0.9em;">@op.Id.ToString()[..8]...</td>
+                    <td class="fw-bold">@op.HostName</td>
+                    <td>@op.SoftwareName</td>
+                    <td>
+                        <span class="badge @(op.Type == "Install" ? "bg-primary" : "bg-secondary")">
+                            @op.Type
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge @(op.Status == "Succeeded" ? "bg-success" : op.Status == "Failed" ? "bg-danger" : "bg-warning text-dark")">
+                            @op.Status
+                        </span>
+                    </td>
+                    <td>@op.Date.ToString("yyyy-MM-dd HH:mm")</td>
+                </tr>
+            }
             </tbody>
         </table>
     </div>
 </div>
 
 @code {
-    // ==========================================
-    // View Models (الگوهای کد تمیز برای فرانت‌اند)
-    // ==========================================
-
-    // ۱. مدل دیتای آماری
     private DashboardStats DashboardData { get; set; } = new();
 
-    // ۲. لیست آخرین عملیات‌ها
     private List<OperationRecord> RecentOperations { get; set; } = new();
 
-    // ==========================================
-    // چرخه حیات (Lifecycle) کامپوننت
-    // ==========================================
+    
     protected override async Task OnInitializedAsync()
     {
-        // نکته آموزشی Blazor:
-        // در آینده اینجا متدهای API بک‌اند رو صدا می‌زنیم:
-        // DashboardData = await DashboardService.GetStatsAsync();
 
-        // فعلاً برای اینکه ظاهر داشبورد رو ببینی، دیتای Mock (آزمایشی) لود می‌کنیم:
         await LoadMockDataAsync();
     }
 
     private async Task LoadMockDataAsync()
     {
-        // شبیه‌سازی تاخیر شبکه
         await Task.Delay(100);
 
         DashboardData = new DashboardStats
-            {
-                TotalHosts = 12,
-                ActivePackages = 5,
-                SuccessRate = 98.5,
-                PendingOperations = 1
-            };
+        {
+            TotalHosts = 12,
+            ActivePackages = 5,
+            SuccessRate = 98.5,
+            PendingOperations = 1
+        };
 
         RecentOperations = new List<OperationRecord>
         {
@@ -121,9 +106,7 @@
         };
     }
 
-    // ==========================================
-    // Classes (کلاس‌های داده محلی)
-    // ==========================================
+    
     public class DashboardStats
     {
         public int TotalHosts { get; set; }
@@ -133,4 +116,5 @@
     }
 
     public record OperationRecord(Guid Id, string HostName, string SoftwareName, string Type, string Status, DateTime Date);
+
 }

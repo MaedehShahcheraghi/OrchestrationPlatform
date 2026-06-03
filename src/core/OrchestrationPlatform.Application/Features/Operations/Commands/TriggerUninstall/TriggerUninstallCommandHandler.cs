@@ -11,12 +11,13 @@ namespace OrchestrationPlatform.Application.Features.Operations.Commands.Trigger
 internal sealed class TriggerUninstallCommandHandler(
     IUnitOfWork unitOfWork,
     IOrchestrationService orchestrationService)
-    : IRequestHandler<TriggerUninstallCommand, List<Guid>>
+    : IRequestHandler<TriggerUninstallCommand, Dictionary<Guid, Guid>>
 {
-    public async Task<List<Guid>> Handle(TriggerUninstallCommand request, CancellationToken cancellationToken)
+    public async Task<Dictionary<Guid, Guid>> Handle(TriggerUninstallCommand request,
+        CancellationToken cancellationToken)
     {
         var hostRepo = unitOfWork.GetReadRepository<OperatingSystemHost>();
-        var versionRepo = unitOfWork.GetReadRepository<Domain.Entities.SoftwarePackageVersion>();
+        var versionRepo = unitOfWork.GetReadRepository<SoftwarePackageVersion>();
         var installedSoftwareRepo = unitOfWork.GetReadRepository<InstalledSoftware>(); // ریپازیتوری جدید
         var operationRepo = unitOfWork.GetWriteRepository<InstallOperation>();
 
@@ -51,17 +52,19 @@ internal sealed class TriggerUninstallCommandHandler(
 
         var operations = new List<InstallOperation>();
         var targetNodes = new List<BulkTargetModel>();
-
+        var operationMap = new Dictionary<Guid, Guid>();
         foreach (var host in targetHosts)
         {
-            var operation = new InstallOperation(
+            var operation = InstallOperation.Create(
                 request.SoftwarePackageVersionId,
                 host.Id,
                 InstallOperationType.Uninstall,
-                DateTime.UtcNow);
+                packageVersion.SoftwarePackage.Name,
+                packageVersion.Version);
 
             operations.Add(operation);
             targetNodes.Add(new BulkTargetModel(operation.Id, host.IpAddress, host.Username));
+            operationMap.Add(operation.Id, host.Id);
         }
 
         var workflowExecutionId = await orchestrationService.TriggerUninstallWorkflowAsync(
@@ -74,6 +77,6 @@ internal sealed class TriggerUninstallCommandHandler(
         await operationRepo.AddRangeAsync(operations, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return operations.Select(o => o.Id).ToList();
+        return operationMap;
     }
 }

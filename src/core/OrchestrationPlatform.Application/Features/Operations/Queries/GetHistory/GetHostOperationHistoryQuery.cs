@@ -1,16 +1,11 @@
 ﻿using MediatR;
-using OrchestrationPlatform.Domain.Enums;
+using OrchestrationPlatform.Application.Abstractions.Models.Base;
+using OrchestrationPlatform.Application.Features.Operations.Queries.DTOs;
 
 namespace OrchestrationPlatform.Application.Features.Operations.Queries.GetHistory;
 
-public record GetHostOperationHistoryQuery(Guid HostId, Guid PackageVersionId)
-    : IRequest<IReadOnlyList<OperationHistoryDto>>;
-
-public record OperationHistoryDto(
-    Guid OperationId,
-    InstallOperationType operationType,
-    string Status,
-    int ProgressPercent,
-    DateTime RequestedAtUtc,
-    DateTime? FinishedAtUtc,
-    string? ErrorMessage);
+public sealed record GetHostOperationHistoryQuery(
+    Guid HostId,
+    int PageNumber = 1,
+    int PageSize = 10)
+    : IRequest<PagedResult<OperationHistoryDto>>;

@@ -67,6 +67,10 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                     b.Property<int>("OperationType")
                         .HasColumnType("int");
 
+                    b.Property<string>("PackageNameSnapshot")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("ProgressPercent")
                         .HasColumnType("int");
 
@@ -81,6 +85,10 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<string>("VersionSnapshot")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

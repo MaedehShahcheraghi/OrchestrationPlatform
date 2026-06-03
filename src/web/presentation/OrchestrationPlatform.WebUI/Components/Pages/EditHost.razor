@@ -1,8 +1,8 @@
 ﻿@page "/hosts/edit/{Id:guid}"
-@rendermode InteractiveServer
 @using OrchestrationPlatform.WebUI.Enums
 @using OrchestrationPlatform.WebUI.Models.Hosts
 @using OrchestrationPlatform.WebUI.Services.Hosts
+@rendermode @(new InteractiveServerRenderMode(false))
 @inject NavigationManager NavManager
 @inject IHostHttpService HostService
 
@@ -24,21 +24,32 @@
 else
 {
     <div class="custom-card shadow-sm border-0 position-relative" style="max-width: 900px; border-radius: 16px; overflow: hidden;">
-
         <div style="height: 6px; background: linear-gradient(90deg, #3b82f6, var(--primary-purple)); width: 100%; position: absolute; top: 0; left: 0;"></div>
 
         <div class="p-4 p-md-5">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 style="color: var(--text-main); font-weight: 700; margin: 0;">Host Details</h4>
-                <span class="badge" style="background-color: rgba(99, 102, 241, 0.1); color: var(--primary-purple); font-family: monospace;">ID: @Id.ToString()[..8]</span>
+                <h4 class="d-flex align-items-center m-0" style="color: var(--text-main); font-weight: 700;">
+                    <svg class="me-2 text-primary" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    Host Details
+                </h4>
+                <span class="badge" style="background-color: rgba(99, 102, 241, 0.1); color: var(--primary-purple); font-family: monospace; font-size: 0.85rem;">ID: @Id.ToString()[..8]</span>
             </div>
+
+            @if (!string.IsNullOrEmpty(_pageError))
+            {
+                <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                    @_pageError
+                    <button type="button" class="btn-close" @onclick="() => _pageError = null"></button>
+                </div>
+            }
 
             <EditForm Model="@_formModel" OnValidSubmit="HandleValidSubmit" FormName="UpdateHostForm">
                 <DataAnnotationsValidator />
 
                 <div class="mb-4">
                     <label class="modern-label">
-                        <span class="me-2 opacity-75">🏷️</span> Host Identifier
+                        <svg class="me-2 text-secondary" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                        Host Identifier
                     </label>
                     <InputText @bind-Value="_formModel.Name" class="form-control glass-input" autocomplete="off" />
                     <ValidationMessage For="@(() => _formModel.Name)" class="text-danger mt-1 small fw-bold" />
@@ -47,7 +58,8 @@ else
                 <div class="row">
                     <div class="col-md-7 mb-4">
                         <label class="modern-label">
-                            <span class="me-2 opacity-75">🌐</span> IPv4 Address
+                            <svg class="me-2 text-secondary" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                            IPv4 Address
                         </label>
                         <InputText @bind-Value="_formModel.IpAddress" class="form-control glass-input" autocomplete="off" />
                         <ValidationMessage For="@(() => _formModel.IpAddress)" class="text-danger mt-1 small fw-bold" />
@@ -55,7 +67,8 @@ else
 
                     <div class="col-md-5 mb-4">
                         <label class="modern-label">
-                            <span class="me-2 opacity-75">👤</span> SSH User
+                            <svg class="me-2 text-secondary" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            SSH User
                         </label>
                         <InputText @bind-Value="_formModel.Username" class="form-control glass-input" autocomplete="off" />
                         <ValidationMessage For="@(() => _formModel.Username)" class="text-danger mt-1 small fw-bold" />
@@ -118,7 +131,7 @@ else
                 <div class="d-flex justify-content-end align-items-center mt-4">
                     <a href="/hosts" class="btn btn-link text-muted me-4 text-decoration-none fw-bold">Cancel</a>
 
-                    <button type="submit" class="btn text-white px-4 py-2" style="background-color: var(--primary-purple); border-radius: 10px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transition: all 0.3s;" disabled="@_isSubmitting">
+                    <button type="submit" class="btn text-white px-4 py-2 d-flex align-items-center" style="background-color: var(--primary-purple); border-radius: 10px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transition: all 0.3s;" disabled="@_isSubmitting">
                         @if (_isSubmitting)
                         {
                             <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -126,7 +139,8 @@ else
                         }
                         else
                         {
-                            <span class="me-2">💾</span> <span>Save Changes</span>
+                            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="me-2"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                            <span>Save Changes</span>
                         }
                     </button>
                 </div>
@@ -172,44 +186,56 @@ else
 </style>
 
 @code {
-    [Parameter]
-    public Guid Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
 
     private UpdateHostFormModel _formModel = new();
     private bool _isLoading = true;
-    private bool _isSubmitting = false;
+    private bool _isSubmitting;
+    private string? _pageError;
 
     protected override async Task OnInitializedAsync()
     {
-        var host = await HostService.GetHostByIdAsync(Id);
-
-        if (host != null)
+        try
         {
-            _formModel = new UpdateHostFormModel
-                {
-                    Id = host.Id,
-                    Name = host.Name,
-                    IpAddress = host.IpAddress,
-                    SshPort = host.SshPort,
-                    Username = host.Username,
-                    OperatingSystemFamily = host.OperatingSystemFamily,
-                    OperatingSystemVersion = host.OperatingSystemVersion,
-                    Architecture = host.Architecture,
-                    Description = host.Description,
-                    IsActive = host.IsActive
-                };
+            var host = await HostService.GetHostByIdAsync(Id);
+
+            if (host != null)
+            {
+                _formModel = new UpdateHostFormModel
+                    {
+                        Id = host.Id,
+                        Name = host.Name,
+                        IpAddress = host.IpAddress,
+                        SshPort = host.SshPort,
+                        Username = host.Username,
+                        OperatingSystemFamily = host.OperatingSystemFamily,
+                        OperatingSystemVersion = host.OperatingSystemVersion,
+                        Architecture = host.Architecture,
+                        Description = host.Description,
+                        IsActive = host.IsActive
+                    };
+            }
+            else
+            {
+                NavManager.NavigateTo("/hosts");
+            }
         }
-        else
+        catch (Exception)
         {
             NavManager.NavigateTo("/hosts");
         }
-
-        _isLoading = false;
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
     private async Task HandleValidSubmit()
     {
         _isSubmitting = true;
+        _pageError = null;
+        StateHasChanged();
+
         try
         {
             await HostService.UpdateHostAsync(_formModel);
@@ -217,11 +243,12 @@ else
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            _pageError = "Failed to update host: " + ex.Message;
         }
         finally
         {
             _isSubmitting = false;
+            StateHasChanged();
         }
     }
 }

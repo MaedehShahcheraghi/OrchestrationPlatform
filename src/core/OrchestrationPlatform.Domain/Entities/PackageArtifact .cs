@@ -4,6 +4,18 @@ namespace OrchestrationPlatform.Domain.Entities;
 
 public sealed class PackageArtifact : AuditableEntity
 {
+    #region Foreign Keys
+
+    public Guid SoftwarePackageVersionId { get; private set; }
+
+    #endregion
+
+    #region Navigation Properties
+
+    public SoftwarePackageVersion SoftwarePackageVersion { get; private set; } = null!;
+
+    #endregion
+
     #region Constructors
 
     private PackageArtifact()
@@ -33,12 +45,6 @@ public sealed class PackageArtifact : AuditableEntity
 
     #endregion
 
-    #region Foreign Keys
-
-    public Guid SoftwarePackageVersionId { get; private set; }
-
-    #endregion
-
     #region Properties
 
     public string BucketName { get; private set; } = null!;
@@ -56,12 +62,6 @@ public sealed class PackageArtifact : AuditableEntity
     public DateTime UploadedAtUtc { get; private set; }
 
     public bool IsActive { get; private set; }
-
-    #endregion
-
-    #region Navigation Properties
-
-    public SoftwarePackageVersion SoftwarePackageVersion { get; private set; } = null!;
 
     #endregion
 

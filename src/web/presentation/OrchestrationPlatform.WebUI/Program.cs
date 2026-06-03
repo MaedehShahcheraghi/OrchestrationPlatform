@@ -1,5 +1,7 @@
 using OrchestrationPlatform.WebUI.Components;
 using OrchestrationPlatform.WebUI.Services.Hosts;
+using OrchestrationPlatform.WebUI.Services.Operations;
+using OrchestrationPlatform.WebUI.Services.Packages;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,9 +12,10 @@ var apiBaseUrl = builder.Configuration.GetValue<string>("ApiSettings:BaseUrl")
                  ?? throw new InvalidOperationException("API BaseUrl is not configured.");
 
 builder.Services.AddHttpClient<IHostHttpService, HostHttpService>(client =>
-{
-    client.BaseAddress = new Uri(apiBaseUrl);
-});
+    {
+        client.BaseAddress = new Uri(apiBaseUrl);
+    }).AddTypedClient<IPackageHttpService, PackageHttpService>()
+    .AddTypedClient<IOperationHttpService, OperationHttpService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

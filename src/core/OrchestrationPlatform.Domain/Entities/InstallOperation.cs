@@ -54,6 +54,32 @@ public sealed class InstallOperation : AuditableEntity
 
     public ICollection<OperationLog> Logs { get; } = [];
 
+    public string PackageNameSnapshot { get; private set; } = string.Empty;
+    public string VersionSnapshot { get; private set; } = string.Empty;
+
+
+    public static InstallOperation Create(
+        Guid softwarePackageVersionId,
+        Guid operatingSystemHostId,
+        InstallOperationType operationType,
+        string packageName,
+        string version)
+    {
+        if (string.IsNullOrWhiteSpace(packageName))
+            throw new ArgumentException("Package name snapshot cannot be empty.", nameof(packageName));
+
+        var operation = new InstallOperation(
+            softwarePackageVersionId,
+            operatingSystemHostId,
+            operationType,
+            DateTime.UtcNow);
+
+        operation.PackageNameSnapshot = packageName;
+        operation.VersionSnapshot = version;
+
+        return operation;
+    }
+
     public void Start(DateTime startedAtUtc)
     {
         Status = InstallOperationStatus.Preparing;
