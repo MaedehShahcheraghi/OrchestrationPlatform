@@ -5,6 +5,12 @@ namespace OrchestrationPlatform.Domain.Entities;
 
 public sealed class SoftwarePackageVersion : AuditableEntity
 {
+    #region Foreign Keys
+
+    public Guid SoftwarePackageId { get; private set; }
+
+    #endregion
+
     #region Constructors
 
     private SoftwarePackageVersion()
@@ -30,12 +36,6 @@ public sealed class SoftwarePackageVersion : AuditableEntity
 
     #endregion
 
-    #region Foreign Keys
-
-    public Guid SoftwarePackageId { get; private set; }
-
-    #endregion
-
     #region Properties
 
     public string Version { get; private set; } = null!;
@@ -56,7 +56,7 @@ public sealed class SoftwarePackageVersion : AuditableEntity
 
     public SoftwarePackage SoftwarePackage { get; private set; } = null!;
 
-    public PackageArtifact? Artifact { get; private set; }
+    public PackageArtifact? Artifact { get; }
 
     public ICollection<InstallOperation> InstallOperations { get; private set; } = [];
 

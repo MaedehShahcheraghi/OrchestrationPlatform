@@ -5,6 +5,7 @@ using OrchestrationPlatform.Application.Features.Hosts.Commands.DeleteHost;
 using OrchestrationPlatform.Application.Features.Hosts.Commands.UpdateHost;
 using OrchestrationPlatform.Application.Features.Hosts.Queries.GetAllHostsQuery;
 using OrchestrationPlatform.Application.Features.Hosts.Queries.GetHost;
+using OrchestrationPlatform.Application.Features.Operations.Queries.GetInstalledSoftwares;
 
 namespace OrchestrationPlatform.Api.Controllers;
 
@@ -49,5 +50,11 @@ public class HostsController(IMediator mediator) : ControllerBase
     {
         await mediator.Send(new DeleteHostCommand(id), cancellationToken);
         return NoContent();
+    }
+
+    [HttpGet("{hostId:guid}/installed-softwares")]
+    public async Task<IActionResult> GetInstalledSoftwares(Guid hostId, CancellationToken cancellationToken)
+    {
+        return Ok(await mediator.Send(new GetInstalledSoftwaresQuery(hostId), cancellationToken));
     }
 }

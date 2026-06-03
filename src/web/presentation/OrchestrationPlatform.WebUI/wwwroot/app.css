@@ -1,14 +1,14 @@
 ﻿:root {
-    --primary-purple: #6366f1; /* بنفش نئون مدرن برای دکمه‌ها و بخش‌های اصلی */
-    --primary-hover: #4f46e5; /* بنفش تیره برای هاور */
-    --bg-dark-indigo: #0f172a; /* رنگ پس‌زمینه منوی سمت چپ (سرمه‌ای/بنفش خیلی تیره) */
-    --bg-light: #f8fafc; /* پس‌زمینه اصلی صفحات */
-    --card-bg: #ffffff; /* پس‌زمینه کارت‌ها */
-    --text-main: #1e293b; /* رنگ متن اصلی */
-    --text-muted: #64748b; /* رنگ متن‌های کم‌اهمیت‌تر */
-    --border-color: #e2e8f0; /* رنگ خطوط و مرزها */
-    --success-green: #10b981; /* سبز برای عملیات‌های موفق */
-    --danger-red: #ef4444; /* قرمز برای خطاها */
+    --primary-purple: #6366f1; 
+    --primary-hover: #4f46e5; 
+    --bg-dark-indigo: #0f172a; 
+    --bg-light: #f8fafc; 
+    --card-bg: #ffffff; 
+    --text-main: #1e293b; 
+    --text-muted: #64748b; 
+    --border-color: #e2e8f0; 
+    --success-green: #10b981; 
+    --danger-red: #ef4444; 
 }
 
 body {
@@ -24,7 +24,6 @@ body {
     min-height: 100vh;
 }
 
-/* استایل منوی سمت چپ (Sidebar) */
 .sidebar {
     width: 260px;
     background-color: var(--bg-dark-indigo);
@@ -66,7 +65,6 @@ body {
         border-left: 4px solid var(--primary-purple);
     }
 
-/* محتوای اصلی سمت راست */
 .main-content {
     flex-grow: 1;
     padding: 40px;
@@ -95,4 +93,113 @@ body {
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.package-list-item {
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.25rem;
+    transition: all 0.2s ease;
+}
+
+    .package-list-item:last-child {
+        border-bottom: none;
+    }
+
+    .package-list-item:hover {
+        background-color: rgba(99, 102, 241, 0.05);
+    }
+
+.active-pkg {
+    background-color: rgba(99, 102, 241, 0.1) !important;
+    border-left: 4px solid var(--primary-purple) !important;
+    color: var(--primary-purple) !important;
+}
+
+/* Modal Styles */
+.modern-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modern-modal-content {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 550px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(0);
+    animation: slideUp 0.3s ease-out;
+}
+
+.btn-close-custom {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+    .btn-close-custom:hover {
+        color: var(--danger-red);
+    }
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Inputs */
+.glass-input {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.85rem 1.25rem;
+    border-radius: 10px;
+    font-size: 0.95rem;
+}
+
+    .glass-input:focus {
+        background-color: #ffffff;
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        outline: none;
+    }
+
+.modern-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 700;
+    display: block;
 }
