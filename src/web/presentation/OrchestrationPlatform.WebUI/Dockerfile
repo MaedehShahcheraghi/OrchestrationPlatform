@@ -9,17 +9,18 @@ WORKDIR /src
 
 COPY . .
 
-RUN dotnet restore "src/web/api/OrchestrationPlatform.Api/OrchestrationPlatform.Api.csproj"
+RUN dotnet restore \
+    "src/web/presentation/OrchestrationPlatform.WebUI/OrchestrationPlatform.WebUI.csproj"
 
 RUN dotnet build \
-    "src/web/api/OrchestrationPlatform.Api/OrchestrationPlatform.Api.csproj" \
+    "src/web/presentation/OrchestrationPlatform.WebUI/OrchestrationPlatform.WebUI.csproj" \
     -c Release \
     -o /app/build
 
 FROM build AS publish
 
 RUN dotnet publish \
-    "src/web/api/OrchestrationPlatform.Api/OrchestrationPlatform.Api.csproj" \
+    "src/web/presentation/OrchestrationPlatform.WebUI/OrchestrationPlatform.WebUI.csproj" \
     -c Release \
     -o /app/publish \
     /p:UseAppHost=false
@@ -32,4 +33,4 @@ WORKDIR /app
 
 COPY --from=publish /app/publish .
 
-ENTRYPOINT ["dotnet", "OrchestrationPlatform.Api.dll"]
+ENTRYPOINT ["dotnet", "OrchestrationPlatform.WebUI.dll"]

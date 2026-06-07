@@ -25,8 +25,8 @@ internal sealed class GetHostOperationHistoryQueryHandler(IUnitOfWork unitOfWork
             x.Id,
             x.OperationType,
             x.Status,
-            x.PackageNameSnapshot, 
-            x.VersionSnapshot, 
+            x.PackageNameSnapshot,
+            x.VersionSnapshot,
             x.RequestedAtUtc)).ToList();
 
         return new PagedResult<OperationHistoryDto>(
