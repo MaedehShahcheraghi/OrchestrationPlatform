@@ -45,7 +45,7 @@ This project follows **Clean Architecture** principles, ensuring a strict separa
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### 📌 Prerequisites for Target Hosts
 
