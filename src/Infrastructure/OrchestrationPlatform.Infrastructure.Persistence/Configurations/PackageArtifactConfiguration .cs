@@ -53,7 +53,8 @@ public sealed class PackageArtifactConfiguration : IEntityTypeConfiguration<Pack
 
         builder.HasIndex(x => new { x.BucketName, x.ObjectKey })
             .IsUnique()
-            .HasDatabaseName("UX_PackageArtifacts_BucketName_ObjectKey");
+            .HasDatabaseName("UX_PackageArtifacts_BucketName_ObjectKey")
+            .HasFilter("[IsDeleted] = 0");
 
         builder.HasOne(x => x.SoftwarePackageVersion)
             .WithOne(x => x.Artifact)

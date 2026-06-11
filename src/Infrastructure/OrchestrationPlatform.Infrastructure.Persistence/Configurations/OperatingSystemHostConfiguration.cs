@@ -67,7 +67,9 @@ public sealed class OperatingSystemHostConfiguration : IEntityTypeConfiguration<
 
         builder.HasIndex(x => new { x.IpAddress, x.SshPort })
             .IsUnique()
-            .HasDatabaseName("UX_OperatingSystemHosts_IpAddress_SshPort");
+            .HasDatabaseName("UX_OperatingSystemHosts_IpAddress_SshPort")
+            .HasFilter("[IsDeleted] = 0");
+        ;
 
         builder.HasMany(x => x.InstallOperations)
             .WithOne(x => x.OperatingSystemHost)

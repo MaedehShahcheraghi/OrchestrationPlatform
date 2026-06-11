@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 
@@ -11,9 +12,11 @@ using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(OrchestrationWriteDbContext))]
-    partial class OrchestrationWriteDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611103856_AFDDfilterforsoftdelete")]
+    partial class AFDDfilterforsoftdelete
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -470,8 +473,7 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SoftwarePackageId", "Version", "PackageType", "OperatingSystemFamily", "OperatingSystemVersion", "Architecture")
                         .IsUnique()
-                        .HasDatabaseName("UX_SoftwarePackageVersions_UniqueVersion")
-                        .HasFilter("[IsDeleted] = 0");
+                        .HasDatabaseName("UX_SoftwarePackageVersions_UniqueVersion");
 
                     b.ToTable("SoftwarePackageVersions", "orchestration");
                 });

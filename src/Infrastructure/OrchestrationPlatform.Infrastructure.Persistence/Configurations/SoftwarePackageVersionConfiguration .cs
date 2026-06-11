@@ -52,7 +52,9 @@ public sealed class SoftwarePackageVersionConfiguration : IEntityTypeConfigurati
                 x.Architecture
             })
             .IsUnique()
-            .HasDatabaseName("UX_SoftwarePackageVersions_UniqueVersion");
+            .HasDatabaseName("UX_SoftwarePackageVersions_UniqueVersion")
+            .HasFilter("[IsDeleted] = 0");
+        ;
 
         builder.HasOne(x => x.SoftwarePackage)
             .WithMany(x => x.Versions)
