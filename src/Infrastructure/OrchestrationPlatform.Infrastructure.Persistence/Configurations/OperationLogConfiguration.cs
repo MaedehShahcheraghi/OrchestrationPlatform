@@ -15,7 +15,7 @@ public sealed class OperationLogConfiguration : IEntityTypeConfiguration<Operati
         builder.Property(x => x.Id)
             .ValueGeneratedNever();
 
-        builder.Property(x => x.InstallOperationId)
+        builder.Property(x => x.OrchestrationOperationId)
             .IsRequired();
 
         builder.Property(x => x.Level)
@@ -32,12 +32,12 @@ public sealed class OperationLogConfiguration : IEntityTypeConfiguration<Operati
             .IsRequired()
             .HasColumnType("datetime2");
 
-        builder.HasOne(x => x.InstallOperation)
+        builder.HasOne(x => x.OrchestrationOperation)
             .WithMany(x => x.Logs)
-            .HasForeignKey(x => x.InstallOperationId)
+            .HasForeignKey(x => x.OrchestrationOperationId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.InstallOperationId, x.LoggedAtUtc })
+        builder.HasIndex(x => new { x.OrchestrationOperationId, x.LoggedAtUtc })
             .HasDatabaseName("IX_OperationLogs_InstallOperationId_LoggedAtUtc");
 
         builder.HasIndex(x => x.Level)

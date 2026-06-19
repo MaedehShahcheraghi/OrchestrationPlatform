@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using OrchestrationPlatform.Application.Features.Operations.Commands.TriggerConfiguration;
 using OrchestrationPlatform.Application.Features.Operations.Commands.TriggerInstall;
 using OrchestrationPlatform.Application.Features.Operations.Commands.TriggerUninstall;
 using OrchestrationPlatform.Application.Features.Operations.Commands.UpdateProgress;
@@ -53,5 +54,14 @@ public class OperationsController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetOperationLogs(Guid operationId, CancellationToken cancellationToken)
     {
         return Ok(await mediator.Send(new GetOperationLogsQuery(operationId), cancellationToken));
+    }
+
+    [HttpPost("configure")]
+    public async Task<ActionResult<TriggerConfigurationCommandrResult>> TriggerConfigure(
+        [FromBody] TriggerConfigurationCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        return Ok(result);
     }
 }

@@ -71,7 +71,7 @@ public sealed class OperatingSystemHostConfiguration : IEntityTypeConfiguration<
             .HasFilter("[IsDeleted] = 0");
         ;
 
-        builder.HasMany(x => x.InstallOperations)
+        builder.HasMany(x => x.OrchestrationOperations)
             .WithOne(x => x.OperatingSystemHost)
             .HasForeignKey(x => x.OperatingSystemHostId)
             .OnDelete(DeleteBehavior.Restrict);

@@ -2,6 +2,7 @@
 @rendermode @(new InteractiveServerRenderMode(false))
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.SignalR.Client
+@using OrchestrationPlatform.Domain.Enums
 @using OrchestrationPlatform.WebUI.DTOs.Hosts
 @using OrchestrationPlatform.WebUI.DTOs.Operations
 @using OrchestrationPlatform.WebUI.DTOs.Packages
@@ -234,7 +235,7 @@
                                             <td class="fw-bold">@log.operationType.ToString()</td>
                                             <td>@log.PackageNameSnapshot <span class="badge bg-secondary">@log.VersionSnapshot</span></td>
                                             <td>
-                                                <span class="@(log.Status == InstallOperationStatus.Succeeded ? "badge bg-success" : log.Status == InstallOperationStatus.Failed ? "badge bg-danger" : "badge bg-warning text-dark")">
+                                                <span class="@(log.Status == OrchestrationOperationStatus.Succeeded ? "badge bg-success" : log.Status == OrchestrationOperationStatus.Failed ? "badge bg-danger" : "badge bg-warning text-dark")">
                                                     @log.Status.ToString()
                                                 </span>
                                             </td>

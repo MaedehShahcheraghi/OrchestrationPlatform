@@ -20,7 +20,7 @@ public sealed class InstalledSoftware : AuditableEntity
     {
         SoftwarePackageVersionId = softwarePackageVersionId;
         OperatingSystemHostId = operatingSystemHostId;
-        InstallOperationId = installOperationId;
+        OrchestrationOperationId = installOperationId;
         InstalledName = installedName;
         InstalledVersion = installedVersion;
         InstalledAtUtc = installedAtUtc;
@@ -35,7 +35,7 @@ public sealed class InstalledSoftware : AuditableEntity
 
     public Guid OperatingSystemHostId { get; private set; }
 
-    public Guid InstallOperationId { get; private set; }
+    public Guid OrchestrationOperationId { get; }
 
     #endregion
 
@@ -59,7 +59,7 @@ public sealed class InstalledSoftware : AuditableEntity
 
     public OperatingSystemHost OperatingSystemHost { get; private set; } = null!;
 
-    public InstallOperation InstallOperation { get; private set; } = null!;
+    public OrchestrationOperation OrchestrationOperation { get; private set; } = null!;
 
     #endregion
 

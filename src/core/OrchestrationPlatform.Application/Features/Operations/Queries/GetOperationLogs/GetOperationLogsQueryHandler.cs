@@ -14,7 +14,7 @@ internal sealed class GetOperationLogsQueryHandler(IUnitOfWork unitOfWork)
         var repo = unitOfWork.GetReadRepository<OperationLog>();
         var logs = await repo.ListProjectedAsync(
             x => new OperationLogDto(x.Id, x.Level, x.Message, x.Details, x.LoggedAtUtc),
-            x => x.InstallOperationId == request.OperationId, cancellationToken: cancellationToken);
+            x => x.OrchestrationOperationId == request.OperationId, cancellationToken: cancellationToken);
 
         return logs;
     }

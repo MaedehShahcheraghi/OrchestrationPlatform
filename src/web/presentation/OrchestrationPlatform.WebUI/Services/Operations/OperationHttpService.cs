@@ -46,4 +46,13 @@ public class OperationHttpService(HttpClient httpClient, ILogger<OperationHttpSe
         return await httpClient.GetJsonAsync<List<OperationLogDto>>($"{BaseUrl}/{operationId}/logs") ??
                new List<OperationLogDto>();
     }
+
+    public async Task<Dictionary<Guid, Guid>> TriggerConfigureAsync(ConfigureOperationDto request)
+    {
+        var response = await httpClient.PostJsonAsync($"{BaseUrl}/configure", request);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<TriggerOperationResponseDto>();
+        return result?.OperationHostMapping ?? new Dictionary<Guid, Guid>();
+    }
 }

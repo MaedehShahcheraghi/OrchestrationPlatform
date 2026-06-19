@@ -18,7 +18,7 @@ public sealed class InstalledSoftwareConfiguration : IEntityTypeConfiguration<In
         builder.Property(x => x.OperatingSystemHostId)
             .IsRequired();
 
-        builder.Property(x => x.InstallOperationId)
+        builder.Property(x => x.OrchestrationOperationId)
             .IsRequired();
 
         builder.Property(x => x.InstalledName)
@@ -47,9 +47,9 @@ public sealed class InstalledSoftwareConfiguration : IEntityTypeConfiguration<In
             .HasForeignKey(x => x.OperatingSystemHostId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasOne(x => x.InstallOperation)
+        builder.HasOne(x => x.OrchestrationOperation)
             .WithMany()
-            .HasForeignKey(x => x.InstallOperationId)
+            .HasForeignKey(x => x.OrchestrationOperationId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => x.SoftwarePackageVersionId)
@@ -58,9 +58,9 @@ public sealed class InstalledSoftwareConfiguration : IEntityTypeConfiguration<In
         builder.HasIndex(x => x.OperatingSystemHostId)
             .HasDatabaseName("IX_InstalledSoftwares_OperatingSystemHostId");
 
-        builder.HasIndex(x => x.InstallOperationId)
+        builder.HasIndex(x => x.OrchestrationOperationId)
             .IsUnique()
-            .HasDatabaseName("UX_InstalledSoftwares_InstallOperationId");
+            .HasDatabaseName("UX_InstalledSoftwares_OrchestrationOperationId");
 
         builder.HasIndex(x => new { x.OperatingSystemHostId, x.InstalledName })
             .IsUnique()

@@ -66,7 +66,7 @@ public sealed class SoftwarePackageVersionConfiguration : IEntityTypeConfigurati
             .HasForeignKey<PackageArtifact>(x => x.SoftwarePackageVersionId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasMany(x => x.InstallOperations)
+        builder.HasMany(x => x.OrchestrationOperations)
             .WithOne(x => x.SoftwarePackageVersion)
             .HasForeignKey(x => x.SoftwarePackageVersionId)
             .OnDelete(DeleteBehavior.Restrict);

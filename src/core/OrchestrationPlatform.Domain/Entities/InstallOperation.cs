@@ -3,111 +3,121 @@ using OrchestrationPlatform.Domain.Enums;
 
 namespace OrchestrationPlatform.Domain.Entities;
 
-public sealed class InstallOperation : AuditableEntity
+public sealed class OrchestrationOperation : AuditableEntity
 {
-    private InstallOperation()
+    private OrchestrationOperation()
     {
     }
 
-    public InstallOperation(
-        Guid softwarePackageVersionId,
+    private OrchestrationOperation(
+        Guid? softwarePackageVersionId,
         Guid operatingSystemHostId,
-        InstallOperationType operationType,
+        OrchestrationOperationType operationType,
         DateTime requestedAtUtc)
     {
         SoftwarePackageVersionId = softwarePackageVersionId;
         OperatingSystemHostId = operatingSystemHostId;
         OperationType = operationType;
-        Status = InstallOperationStatus.Pending;
+        Status = OrchestrationOperationStatus.Pending;
         ProgressPercent = 0;
         RequestedAtUtc = requestedAtUtc;
     }
 
-    public Guid SoftwarePackageVersionId { get; private set; }
-
-    public SoftwarePackageVersion SoftwarePackageVersion { get; private set; } = null!;
-
+    public Guid? SoftwarePackageVersionId { get; private set; }
+    public SoftwarePackageVersion? SoftwarePackageVersion { get; }
     public Guid OperatingSystemHostId { get; private set; }
-
     public OperatingSystemHost OperatingSystemHost { get; private set; } = null!;
-
-    public InstallOperationType OperationType { get; private set; }
-
-    public InstallOperationStatus Status { get; private set; }
-
+    public OrchestrationOperationType OperationType { get; private set; }
+    public OrchestrationOperationStatus Status { get; private set; }
     public int ProgressPercent { get; private set; }
-
     public DateTime RequestedAtUtc { get; private set; }
-
     public DateTime? StartedAtUtc { get; private set; }
-
     public DateTime? FinishedAtUtc { get; private set; }
-
     public int? ExitCode { get; private set; }
     public string? ErrorMessage { get; private set; }
-
-    public string? AnsiblePlaybookPath { get; private set; }
-
-    public string? AnsibleInventoryPath { get; private set; }
-
     public string? ExternalWorkflowId { get; private set; }
-
-    public ICollection<OperationLog> Logs { get; } = [];
-
     public string PackageNameSnapshot { get; private set; } = string.Empty;
     public string VersionSnapshot { get; private set; } = string.Empty;
+    public string? PayloadJson { get; private set; }
+    public ICollection<OperationLog> Logs { get; } = [];
 
-
-    public static InstallOperation Create(
+    public static OrchestrationOperation CreateSoftwareOperation(
         Guid softwarePackageVersionId,
         Guid operatingSystemHostId,
-        InstallOperationType operationType,
+        OrchestrationOperationType operationType,
         string packageName,
         string version)
     {
         if (string.IsNullOrWhiteSpace(packageName))
             throw new ArgumentException("Package name snapshot cannot be empty.", nameof(packageName));
 
-        var operation = new InstallOperation(
+        var operation = new OrchestrationOperation(
             softwarePackageVersionId,
             operatingSystemHostId,
             operationType,
-            DateTime.UtcNow);
+            DateTime.UtcNow)
+        {
+            PackageNameSnapshot = packageName,
+            VersionSnapshot = version
+        };
 
-        operation.PackageNameSnapshot = packageName;
-        operation.VersionSnapshot = version;
+        return operation;
+    }
+
+    public static OrchestrationOperation CreateConfigurationOperation(
+        Guid operatingSystemHostId,
+        OrchestrationOperationType operationType,
+        string payloadJson)
+    {
+        if (string.IsNullOrWhiteSpace(payloadJson))
+            throw new ArgumentException("Payload JSON cannot be empty.", nameof(payloadJson));
+
+        var operation = new OrchestrationOperation(
+            null,
+            operatingSystemHostId,
+            operationType,
+            DateTime.UtcNow)
+        {
+            PayloadJson = payloadJson
+        };
 
         return operation;
     }
 
     public void Start(DateTime startedAtUtc)
     {
-        Status = InstallOperationStatus.Preparing;
+        Status = OrchestrationOperationStatus.Preparing;
         ProgressPercent = 10;
         StartedAtUtc = startedAtUtc;
     }
 
     public void MarkDownloading()
     {
-        Status = InstallOperationStatus.Downloading;
+        Status = OrchestrationOperationStatus.Downloading;
         ProgressPercent = 30;
     }
 
     public void MarkInstalling()
     {
-        Status = InstallOperationStatus.Installing;
+        Status = OrchestrationOperationStatus.Installing;
+        ProgressPercent = 60;
+    }
+
+    public void MarkConfiguring()
+    {
+        Status = OrchestrationOperationStatus.Configuring;
         ProgressPercent = 70;
     }
 
     public void MarkVerifying()
     {
-        Status = InstallOperationStatus.Verifying;
+        Status = OrchestrationOperationStatus.Verifying;
         ProgressPercent = 90;
     }
 
     public void Succeed(DateTime finishedAtUtc)
     {
-        Status = InstallOperationStatus.Succeeded;
+        Status = OrchestrationOperationStatus.Succeeded;
         ProgressPercent = 100;
         FinishedAtUtc = finishedAtUtc;
         ErrorMessage = null;
@@ -115,26 +125,20 @@ public sealed class InstallOperation : AuditableEntity
 
     public void Fail(string errorMessage, DateTime finishedAtUtc)
     {
-        Status = InstallOperationStatus.Failed;
+        Status = OrchestrationOperationStatus.Failed;
         ErrorMessage = errorMessage;
         FinishedAtUtc = finishedAtUtc;
     }
 
     public void Cancel(DateTime finishedAtUtc)
     {
-        Status = InstallOperationStatus.Canceled;
+        Status = OrchestrationOperationStatus.Canceled;
         FinishedAtUtc = finishedAtUtc;
     }
 
     public void SetProgress(int progressPercent)
     {
         ProgressPercent = Math.Clamp(progressPercent, 0, 100);
-    }
-
-    public void SetAnsibleInfo(string? playbookPath, string? inventoryPath)
-    {
-        AnsiblePlaybookPath = playbookPath;
-        AnsibleInventoryPath = inventoryPath;
     }
 
     public void SetExternalWorkflowId(string? externalWorkflowId)

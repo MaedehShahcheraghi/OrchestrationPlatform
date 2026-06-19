@@ -1,11 +1,11 @@
-﻿using OrchestrationPlatform.WebUI.Enums;
+﻿using OrchestrationPlatform.Domain.Enums;
 
 namespace OrchestrationPlatform.WebUI.DTOs.Operations;
 
 public record OperationHistoryDto(
     Guid OperationId,
-    InstallOperationType operationType,
-    InstallOperationStatus Status,
+    OrchestrationOperationType operationType,
+    OrchestrationOperationStatus Status,
     string PackageNameSnapshot,
     string VersionSnapshot,
     DateTime RequestedAtUtc);

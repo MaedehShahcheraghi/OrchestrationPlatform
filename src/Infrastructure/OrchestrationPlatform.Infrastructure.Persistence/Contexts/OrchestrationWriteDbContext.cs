@@ -20,7 +20,7 @@ public sealed class OrchestrationWriteDbContext : DbContext
 
     public DbSet<OperatingSystemHost> OperatingSystemHosts => Set<OperatingSystemHost>();
 
-    public DbSet<InstallOperation> InstallOperations => Set<InstallOperation>();
+    public DbSet<OrchestrationOperation> InstallOperations => Set<OrchestrationOperation>();
 
     public DbSet<OperationLog> OperationLogs => Set<OperationLog>();
 
