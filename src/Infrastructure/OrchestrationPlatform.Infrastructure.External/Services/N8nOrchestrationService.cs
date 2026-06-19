@@ -20,57 +20,35 @@ public sealed class N8NOrchestrationService(
 
     private string WebhookUrl => $"{_n8NWebhookBaseUrl}/trigger-ansible-operation";
 
-    public async Task<string> TriggerInstallWorkflowAsync(
-        List<BulkTargetModel> targets,
-        string downloadUrl,
+    public async Task<string> TriggerWorkflowAsync(OrchestrationPayload payload,
         CancellationToken cancellationToken = default)
     {
-        var payload = new
+        var finalPayload = new
         {
-            OperationType = "install",
-            PackageDownloadUrl = downloadUrl,
-            PackageName = (string?)null,
+            payload.OperationType,
+            payload.PackageDownloadUrl,
+            payload.PackageName,
+            payload.ConfigAction,
+            payload.ConfigValue,
             Timestamp = DateTime.UtcNow,
-            Targets = FormatTargets(targets)
+            Targets = FormatTargets(payload.Targets)
         };
 
-        return await SendWebhookRequestAsync(payload, cancellationToken);
-    }
-
-    public async Task<string> TriggerUninstallWorkflowAsync(
-        List<BulkTargetModel> targets,
-        string packageName,
-        CancellationToken cancellationToken = default)
-    {
-        var payload = new
-        {
-            OperationType = "uninstall",
-            PackageDownloadUrl = (string?)null,
-            PackageName = packageName,
-            Timestamp = DateTime.UtcNow,
-            Targets = FormatTargets(targets)
-        };
-
-        return await SendWebhookRequestAsync(payload, cancellationToken);
+        return await SendWebhookRequestAsync(finalPayload, cancellationToken);
     }
 
     public async Task CancelWorkflowAsync(string externalWorkflowId, CancellationToken cancellationToken = default)
     {
         var cancelUrl = $"{_n8NWebhookBaseUrl}/cancel-execution/{externalWorkflowId}";
-
         try
         {
-            logger.LogInformation("Attempting to cancel workflow execution: {ExternalWorkflowId}", externalWorkflowId);
             var response = await httpClient.PostAsync(cancelUrl, null, cancellationToken);
-
             if (!response.IsSuccessStatusCode)
-                logger.LogWarning("Cancel workflow returned non-success status code: {StatusCode}",
-                    response.StatusCode);
+                logger.LogWarning("Cancel workflow failed with status code: {StatusCode}", response.StatusCode);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error occurred while trying to cancel workflow {ExternalWorkflowId}",
-                externalWorkflowId);
+            logger.LogError(ex, "Error canceling workflow {ExternalWorkflowId}", externalWorkflowId);
         }
     }
 

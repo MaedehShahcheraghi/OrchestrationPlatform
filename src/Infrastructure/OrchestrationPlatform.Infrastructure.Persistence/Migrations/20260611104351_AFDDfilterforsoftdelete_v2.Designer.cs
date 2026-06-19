@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 
@@ -11,9 +12,11 @@ using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(OrchestrationWriteDbContext))]
-    partial class OrchestrationWriteDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611104351_AFDDfilterforsoftdelete_v2")]
+    partial class AFDDfilterforsoftdelete_v2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,6 +25,92 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.InstallOperation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AnsibleInventoryPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("AnsiblePlaybookPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ExitCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ExternalWorkflowId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("FinishedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("OperatingSystemHostId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("OperationType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PackageNameSnapshot")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProgressPercent")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RequestedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SoftwarePackageVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VersionSnapshot")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsDeleted");
+
+                    b.HasIndex("RequestedAtUtc")
+                        .HasDatabaseName("IX_InstallOperations_RequestedAtUtc");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_InstallOperations_Status");
+
+                    b.HasIndex("OperatingSystemHostId", "RequestedAtUtc")
+                        .HasDatabaseName("IX_InstallOperations_HostId_RequestedAtUtc");
+
+                    b.HasIndex("SoftwarePackageVersionId", "OperatingSystemHostId")
+                        .HasDatabaseName("IX_InstallOperations_PackageVersionId_HostId");
+
+                    b.ToTable("InstallOperations", "orchestration");
+                });
 
             modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.InstalledSoftware", b =>
                 {
@@ -34,6 +123,9 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid>("InstallOperationId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("InstalledAtUtc")
                         .HasColumnType("datetime2");
@@ -60,9 +152,6 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OperatingSystemHostId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("OrchestrationOperationId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("RemovedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -71,14 +160,14 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("InstallOperationId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_InstalledSoftwares_InstallOperationId");
+
                     b.HasIndex("IsDeleted");
 
                     b.HasIndex("OperatingSystemHostId")
                         .HasDatabaseName("IX_InstalledSoftwares_OperatingSystemHostId");
-
-                    b.HasIndex("OrchestrationOperationId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_InstalledSoftwares_OrchestrationOperationId");
 
                     b.HasIndex("SoftwarePackageVersionId")
                         .HasDatabaseName("IX_InstalledSoftwares_SoftwarePackageVersionId");
@@ -189,6 +278,9 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                     b.Property<string>("Details")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("InstallOperationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -205,9 +297,6 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("ModifiedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("OrchestrationOperationId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("IsDeleted");
@@ -215,93 +304,10 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                     b.HasIndex("Level")
                         .HasDatabaseName("IX_OperationLogs_Level");
 
-                    b.HasIndex("OrchestrationOperationId", "LoggedAtUtc")
+                    b.HasIndex("InstallOperationId", "LoggedAtUtc")
                         .HasDatabaseName("IX_OperationLogs_InstallOperationId_LoggedAtUtc");
 
                     b.ToTable("OperationLogs", "orchestration");
-                });
-
-            modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.OrchestrationOperation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ExitCode")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ExternalWorkflowId")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("FinishedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("ModifiedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("OperatingSystemHostId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("OperationType")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PackageNameSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("PayloadJson")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ProgressPercent")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("RequestedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("SoftwarePackageVersionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("StartedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("VersionSnapshot")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IsDeleted");
-
-                    b.HasIndex("RequestedAtUtc")
-                        .HasDatabaseName("IX_OrchestrationOperations_RequestedAtUtc");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("IX_OrchestrationOperations_Status");
-
-                    b.HasIndex("OperatingSystemHostId", "RequestedAtUtc")
-                        .HasDatabaseName("IX_OrchestrationOperations_HostId_RequestedAtUtc");
-
-                    b.HasIndex("SoftwarePackageVersionId", "OperatingSystemHostId")
-                        .HasDatabaseName("IX_OrchestrationOperations_PackageVersionId_HostId");
-
-                    b.ToTable("OrchestrationOperations", "orchestration");
                 });
 
             modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.PackageArtifact", b =>
@@ -473,17 +479,36 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                     b.ToTable("SoftwarePackageVersions", "orchestration");
                 });
 
-            modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.InstalledSoftware", b =>
+            modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.InstallOperation", b =>
                 {
                     b.HasOne("OrchestrationPlatform.Domain.Entities.OperatingSystemHost", "OperatingSystemHost")
-                        .WithMany("InstalledSoftwares")
+                        .WithMany("InstallOperations")
                         .HasForeignKey("OperatingSystemHostId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("OrchestrationPlatform.Domain.Entities.OrchestrationOperation", "OrchestrationOperation")
+                    b.HasOne("OrchestrationPlatform.Domain.Entities.SoftwarePackageVersion", "SoftwarePackageVersion")
+                        .WithMany("InstallOperations")
+                        .HasForeignKey("SoftwarePackageVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OperatingSystemHost");
+
+                    b.Navigation("SoftwarePackageVersion");
+                });
+
+            modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.InstalledSoftware", b =>
+                {
+                    b.HasOne("OrchestrationPlatform.Domain.Entities.InstallOperation", "InstallOperation")
                         .WithMany()
-                        .HasForeignKey("OrchestrationOperationId")
+                        .HasForeignKey("InstallOperationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OrchestrationPlatform.Domain.Entities.OperatingSystemHost", "OperatingSystemHost")
+                        .WithMany("InstalledSoftwares")
+                        .HasForeignKey("OperatingSystemHostId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -493,40 +518,22 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("OperatingSystemHost");
+                    b.Navigation("InstallOperation");
 
-                    b.Navigation("OrchestrationOperation");
+                    b.Navigation("OperatingSystemHost");
 
                     b.Navigation("SoftwarePackageVersion");
                 });
 
             modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.OperationLog", b =>
                 {
-                    b.HasOne("OrchestrationPlatform.Domain.Entities.OrchestrationOperation", "OrchestrationOperation")
+                    b.HasOne("OrchestrationPlatform.Domain.Entities.InstallOperation", "InstallOperation")
                         .WithMany("Logs")
-                        .HasForeignKey("OrchestrationOperationId")
+                        .HasForeignKey("InstallOperationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("OrchestrationOperation");
-                });
-
-            modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.OrchestrationOperation", b =>
-                {
-                    b.HasOne("OrchestrationPlatform.Domain.Entities.OperatingSystemHost", "OperatingSystemHost")
-                        .WithMany("OrchestrationOperations")
-                        .HasForeignKey("OperatingSystemHostId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("OrchestrationPlatform.Domain.Entities.SoftwarePackageVersion", "SoftwarePackageVersion")
-                        .WithMany("OrchestrationOperations")
-                        .HasForeignKey("SoftwarePackageVersionId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("OperatingSystemHost");
-
-                    b.Navigation("SoftwarePackageVersion");
+                    b.Navigation("InstallOperation");
                 });
 
             modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.PackageArtifact", b =>
@@ -551,16 +558,16 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                     b.Navigation("SoftwarePackage");
                 });
 
-            modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.OperatingSystemHost", b =>
-                {
-                    b.Navigation("InstalledSoftwares");
-
-                    b.Navigation("OrchestrationOperations");
-                });
-
-            modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.OrchestrationOperation", b =>
+            modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.InstallOperation", b =>
                 {
                     b.Navigation("Logs");
+                });
+
+            modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.OperatingSystemHost", b =>
+                {
+                    b.Navigation("InstallOperations");
+
+                    b.Navigation("InstalledSoftwares");
                 });
 
             modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.SoftwarePackage", b =>
@@ -572,9 +579,9 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                 {
                     b.Navigation("Artifact");
 
-                    b.Navigation("InstalledSoftwares");
+                    b.Navigation("InstallOperations");
 
-                    b.Navigation("OrchestrationOperations");
+                    b.Navigation("InstalledSoftwares");
                 });
 #pragma warning restore 612, 618
         }

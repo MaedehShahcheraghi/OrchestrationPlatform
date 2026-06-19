@@ -18,14 +18,16 @@ internal sealed class TriggerInstallCommandHandler(
     {
         var hostRepo = unitOfWork.GetReadRepository<OperatingSystemHost>();
         var artifactRepo = unitOfWork.GetReadRepository<PackageArtifact>();
-        var operationRepo = unitOfWork.GetWriteRepository<InstallOperation>();
+        var operationRepo = unitOfWork.GetWriteRepository<OrchestrationOperation>();
         var versionRepo = unitOfWork.GetReadRepository<SoftwarePackageVersion>();
+
         var hosts = await hostRepo.ListAsync(h => request.OperatingSystemHostIds.Contains(h.Id),
             cancellationToken: cancellationToken);
         var packageVersion = await versionRepo.FirstOrDefaultAsync(
             v => v.Id == request.SoftwarePackageVersionId,
             cancellationToken,
             q => q.Include(x => x.SoftwarePackage));
+
         if (packageVersion == null) throw new ApplicationException("Package version not found.");
         if (!hosts.Any()) throw new ApplicationException("No valid hosts found.");
 
@@ -35,27 +37,32 @@ internal sealed class TriggerInstallCommandHandler(
 
         var downloadUrl = await storageService.GetDownloadUrlAsync(
             artifact.BucketName, artifact.ObjectKey, TimeSpan.FromHours(1), cancellationToken);
-        ;
-        var operations = new List<InstallOperation>();
+
+        var operations = new List<OrchestrationOperation>();
         var targetNodes = new List<BulkTargetModel>();
         var operationMap = new Dictionary<Guid, Guid>();
+
         foreach (var host in hosts)
         {
-            var operation = InstallOperation.Create(
+            var operation = OrchestrationOperation.CreateSoftwareOperation(
                 request.SoftwarePackageVersionId,
                 host.Id,
-                InstallOperationType.Install,
+                OrchestrationOperationType.Install,
                 packageVersion.SoftwarePackage.Name,
                 packageVersion.Version);
 
             operations.Add(operation);
-
             targetNodes.Add(new BulkTargetModel(operation.Id, host.IpAddress, host.Username));
             operationMap.Add(operation.Id, host.Id);
         }
 
-        var workflowExecutionId = await orchestrationService.TriggerInstallWorkflowAsync(
-            targetNodes, downloadUrl, cancellationToken);
+        var payload = new OrchestrationPayload(
+            nameof(OrchestrationOperationType.Install),
+            targetNodes,
+            downloadUrl
+        );
+
+        var workflowExecutionId = await orchestrationService.TriggerWorkflowAsync(payload, cancellationToken);
 
         foreach (var op in operations) op.SetExternalWorkflowId(workflowExecutionId);
 

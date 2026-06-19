@@ -18,8 +18,8 @@ internal sealed class TriggerUninstallCommandHandler(
     {
         var hostRepo = unitOfWork.GetReadRepository<OperatingSystemHost>();
         var versionRepo = unitOfWork.GetReadRepository<SoftwarePackageVersion>();
-        var installedSoftwareRepo = unitOfWork.GetReadRepository<InstalledSoftware>(); // ریپازیتوری جدید
-        var operationRepo = unitOfWork.GetWriteRepository<InstallOperation>();
+        var installedSoftwareRepo = unitOfWork.GetReadRepository<InstalledSoftware>();
+        var operationRepo = unitOfWork.GetWriteRepository<OrchestrationOperation>();
 
         var requestedHosts = await hostRepo.ListAsync(
             h => request.OperatingSystemHostIds.Contains(h.Id),
@@ -34,7 +34,6 @@ internal sealed class TriggerUninstallCommandHandler(
 
         if (packageVersion == null) throw new ApplicationException("Software version not found.");
 
-
         var installedRecords = await installedSoftwareRepo.ListAsync(
             i => request.OperatingSystemHostIds.Contains(i.OperatingSystemHostId) &&
                  i.SoftwarePackageVersionId == request.SoftwarePackageVersionId &&
@@ -42,23 +41,22 @@ internal sealed class TriggerUninstallCommandHandler(
             cancellationToken: cancellationToken);
 
         var validHostIds = installedRecords.Select(i => i.OperatingSystemHostId).ToList();
-
         var targetHosts = requestedHosts.Where(h => validHostIds.Contains(h.Id)).ToList();
 
         if (!targetHosts.Any())
             throw new ApplicationException(
                 $"The software '{packageVersion.SoftwarePackage.Name}' is not currently installed on any of the selected hosts.");
 
-
-        var operations = new List<InstallOperation>();
+        var operations = new List<OrchestrationOperation>();
         var targetNodes = new List<BulkTargetModel>();
         var operationMap = new Dictionary<Guid, Guid>();
+
         foreach (var host in targetHosts)
         {
-            var operation = InstallOperation.Create(
+            var operation = OrchestrationOperation.CreateSoftwareOperation(
                 request.SoftwarePackageVersionId,
                 host.Id,
-                InstallOperationType.Uninstall,
+                OrchestrationOperationType.Uninstall,
                 packageVersion.SoftwarePackage.Name,
                 packageVersion.Version);
 
@@ -67,10 +65,13 @@ internal sealed class TriggerUninstallCommandHandler(
             operationMap.Add(operation.Id, host.Id);
         }
 
-        var workflowExecutionId = await orchestrationService.TriggerUninstallWorkflowAsync(
+        var payload = new OrchestrationPayload(
+            nameof(OrchestrationOperationType.Uninstall),
             targetNodes,
-            packageVersion.SoftwarePackage.Name,
-            cancellationToken);
+            PackageName: packageVersion.SoftwarePackage.Name
+        );
+
+        var workflowExecutionId = await orchestrationService.TriggerWorkflowAsync(payload, cancellationToken);
 
         foreach (var op in operations) op.SetExternalWorkflowId(workflowExecutionId);
 

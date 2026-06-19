@@ -9,4 +9,6 @@ public interface IOperationHttpService
     Task<Dictionary<Guid, Guid>> TriggerUninstallAsync(InstallOperationDto request);
     Task<PagedResult<OperationHistoryDto>> GetHostHistoryAsync(Guid hostId, int pageNumber = 1, int pageSize = 10);
     Task<List<OperationLogDto>> GetOperationLogsAsync(Guid operationId);
+
+    Task<Dictionary<Guid, Guid>> TriggerConfigureAsync(ConfigureOperationDto request);
 }

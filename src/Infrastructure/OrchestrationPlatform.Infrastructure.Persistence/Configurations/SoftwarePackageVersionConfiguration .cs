@@ -52,7 +52,9 @@ public sealed class SoftwarePackageVersionConfiguration : IEntityTypeConfigurati
                 x.Architecture
             })
             .IsUnique()
-            .HasDatabaseName("UX_SoftwarePackageVersions_UniqueVersion");
+            .HasDatabaseName("UX_SoftwarePackageVersions_UniqueVersion")
+            .HasFilter("[IsDeleted] = 0");
+        ;
 
         builder.HasOne(x => x.SoftwarePackage)
             .WithMany(x => x.Versions)
@@ -64,7 +66,7 @@ public sealed class SoftwarePackageVersionConfiguration : IEntityTypeConfigurati
             .HasForeignKey<PackageArtifact>(x => x.SoftwarePackageVersionId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasMany(x => x.InstallOperations)
+        builder.HasMany(x => x.OrchestrationOperations)
             .WithOne(x => x.SoftwarePackageVersion)
             .HasForeignKey(x => x.SoftwarePackageVersionId)
             .OnDelete(DeleteBehavior.Restrict);

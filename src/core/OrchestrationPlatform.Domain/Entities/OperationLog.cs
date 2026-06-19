@@ -7,13 +7,13 @@ public sealed class OperationLog : AuditableEntity
 {
     #region Foreign Keys
 
-    public Guid InstallOperationId { get; private set; }
+    public Guid OrchestrationOperationId { get; }
 
     #endregion
 
     #region Navigation Properties
 
-    public InstallOperation InstallOperation { get; private set; } = null!;
+    public OrchestrationOperation OrchestrationOperation { get; private set; } = null!;
 
     #endregion
 
@@ -24,13 +24,13 @@ public sealed class OperationLog : AuditableEntity
     }
 
     public OperationLog(
-        Guid installOperationId,
+        Guid OrchestrationOperationId,
         OperationLogLevel level,
         string message,
         string? details,
         DateTime loggedAtUtc)
     {
-        InstallOperationId = installOperationId;
+        OrchestrationOperationId = OrchestrationOperationId;
         Level = level;
         Message = message;
         Details = details;

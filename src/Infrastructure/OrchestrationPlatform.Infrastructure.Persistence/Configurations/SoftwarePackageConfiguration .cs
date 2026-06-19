@@ -28,7 +28,8 @@ public sealed class SoftwarePackageConfiguration : IEntityTypeConfiguration<Soft
 
         builder.HasIndex(x => x.Name)
             .IsUnique()
-            .HasDatabaseName("UX_SoftwarePackages_Name");
+            .HasDatabaseName("UX_SoftwarePackages_Name")
+            .HasFilter("[IsDeleted] = 0");
 
         builder.HasMany(x => x.Versions)
             .WithOne(x => x.SoftwarePackage)

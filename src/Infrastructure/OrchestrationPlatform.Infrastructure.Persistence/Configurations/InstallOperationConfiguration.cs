@@ -4,11 +4,11 @@ using OrchestrationPlatform.Domain.Entities;
 
 namespace OrchestrationPlatform.Infrastructure.Persistence.Configurations;
 
-public sealed class InstallOperationConfiguration : IEntityTypeConfiguration<InstallOperation>
+public sealed class OrchestrationOperationConfiguration : IEntityTypeConfiguration<OrchestrationOperation>
 {
-    public void Configure(EntityTypeBuilder<InstallOperation> builder)
+    public void Configure(EntityTypeBuilder<OrchestrationOperation> builder)
     {
-        builder.ToTable("InstallOperations");
+        builder.ToTable("OrchestrationOperations");
 
         builder.HasKey(x => x.Id);
 
@@ -16,7 +16,7 @@ public sealed class InstallOperationConfiguration : IEntityTypeConfiguration<Ins
             .ValueGeneratedNever();
 
         builder.Property(x => x.SoftwarePackageVersionId)
-            .IsRequired();
+            .IsRequired(false);
 
         builder.Property(x => x.OperatingSystemHostId)
             .IsRequired();
@@ -45,42 +45,45 @@ public sealed class InstallOperationConfiguration : IEntityTypeConfiguration<Ins
         builder.Property(x => x.ErrorMessage)
             .HasColumnType("nvarchar(max)");
 
-        builder.Property(x => x.AnsiblePlaybookPath)
-            .HasMaxLength(500);
-
-        builder.Property(x => x.AnsibleInventoryPath)
-            .HasMaxLength(500);
-
         builder.Property(x => x.ExternalWorkflowId)
             .HasMaxLength(200);
+
+        builder.Property(x => x.PackageNameSnapshot)
+            .HasMaxLength(200);
+
+        builder.Property(x => x.VersionSnapshot)
+            .HasMaxLength(100);
+
+        builder.Property(x => x.PayloadJson)
+            .HasColumnType("nvarchar(max)");
 
         builder.Property(x => x.ExitCode);
 
         builder.HasOne(x => x.SoftwarePackageVersion)
-            .WithMany(x => x.InstallOperations)
+            .WithMany(x => x.OrchestrationOperations)
             .HasForeignKey(x => x.SoftwarePackageVersionId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(x => x.OperatingSystemHost)
-            .WithMany(x => x.InstallOperations)
+            .WithMany(x => x.OrchestrationOperations)
             .HasForeignKey(x => x.OperatingSystemHostId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(x => x.Logs)
-            .WithOne(x => x.InstallOperation)
-            .HasForeignKey(x => x.InstallOperationId)
+            .WithOne(x => x.OrchestrationOperation)
+            .HasForeignKey(x => x.OrchestrationOperationId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(x => x.Status)
-            .HasDatabaseName("IX_InstallOperations_Status");
+            .HasDatabaseName("IX_OrchestrationOperations_Status");
 
         builder.HasIndex(x => x.RequestedAtUtc)
-            .HasDatabaseName("IX_InstallOperations_RequestedAtUtc");
+            .HasDatabaseName("IX_OrchestrationOperations_RequestedAtUtc");
 
         builder.HasIndex(x => new { x.OperatingSystemHostId, x.RequestedAtUtc })
-            .HasDatabaseName("IX_InstallOperations_HostId_RequestedAtUtc");
+            .HasDatabaseName("IX_OrchestrationOperations_HostId_RequestedAtUtc");
 
         builder.HasIndex(x => new { x.SoftwarePackageVersionId, x.OperatingSystemHostId })
-            .HasDatabaseName("IX_InstallOperations_PackageVersionId_HostId");
+            .HasDatabaseName("IX_OrchestrationOperations_PackageVersionId_HostId");
     }
 }

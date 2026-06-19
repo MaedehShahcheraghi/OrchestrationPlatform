@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 
@@ -11,9 +12,11 @@ using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(OrchestrationWriteDbContext))]
-    partial class OrchestrationWriteDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611142336_AddotherOperationtype")]
+    partial class AddotherOperationtype
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,6 +37,9 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid>("InstallOperationId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("InstalledAtUtc")
                         .HasColumnType("datetime2");
@@ -60,9 +66,6 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OperatingSystemHostId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("OrchestrationOperationId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("RemovedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -71,14 +74,14 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("InstallOperationId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_InstalledSoftwares_InstallOperationId");
+
                     b.HasIndex("IsDeleted");
 
                     b.HasIndex("OperatingSystemHostId")
                         .HasDatabaseName("IX_InstalledSoftwares_OperatingSystemHostId");
-
-                    b.HasIndex("OrchestrationOperationId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_InstalledSoftwares_OrchestrationOperationId");
 
                     b.HasIndex("SoftwarePackageVersionId")
                         .HasDatabaseName("IX_InstalledSoftwares_SoftwarePackageVersionId");
@@ -475,15 +478,15 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("OrchestrationPlatform.Domain.Entities.InstalledSoftware", b =>
                 {
-                    b.HasOne("OrchestrationPlatform.Domain.Entities.OperatingSystemHost", "OperatingSystemHost")
-                        .WithMany("InstalledSoftwares")
-                        .HasForeignKey("OperatingSystemHostId")
+                    b.HasOne("OrchestrationPlatform.Domain.Entities.OrchestrationOperation", "OrchestrationOperation")
+                        .WithMany()
+                        .HasForeignKey("InstallOperationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("OrchestrationPlatform.Domain.Entities.OrchestrationOperation", "OrchestrationOperation")
-                        .WithMany()
-                        .HasForeignKey("OrchestrationOperationId")
+                    b.HasOne("OrchestrationPlatform.Domain.Entities.OperatingSystemHost", "OperatingSystemHost")
+                        .WithMany("InstalledSoftwares")
+                        .HasForeignKey("OperatingSystemHostId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

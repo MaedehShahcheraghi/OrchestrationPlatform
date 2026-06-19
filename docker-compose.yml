@@ -1,29 +1,85 @@
 services:
+
   orchestration-api:
-    container_name: orchestration-platform-api
+    container_name: orchestration-api
+
     build:
       context: .
       dockerfile: src/web/api/OrchestrationPlatform.Api/Dockerfile
-    image: orchestration-platform-api:latest
+
+    image: orchestration-api:latest
+
     ports:
-      - "8000:8080" 
+      - "8000:8080"
+
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__SqlServer: "Data Source=sqlserver,1433;Initial Catalog=OrchestrationPlatformDb;User Id=sa;Password=1234@Abcd;Encrypt=false;TrustServerCertificate=true;"
+
+    depends_on:
+      - sqlserver
+      - redis
+
     networks:
       - orchestration_network
+
+
+  orchestration-webui:
+    container_name: orchestration-webui
+
+    build:
+      context: .
+      dockerfile: src/web/presentation/OrchestrationPlatform.WebUI/Dockerfile
+
+    image: orchestration-webui:latest
+
+    ports:
+      - "5000:8080"
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
     depends_on:
-      - redis
+      - orchestration-api
+
+    networks:
+      - orchestration_network
+
 
   redis:
     image: redis:alpine
+
     container_name: orchestration-redis
-    restart: always
+
     ports:
       - "6379:6379"
+
     networks:
       - orchestration_network
+
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+
+    container_name: orchestration-sqlserver
+
+    ports:
+      - "20022:1433"
+
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "1234@Abcd"
+
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+    networks:
+      - orchestration_network
+
 
 networks:
   orchestration_network:
     driver: bridge
+
+volumes:
+  sqlserver_data:

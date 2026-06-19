@@ -65,7 +65,7 @@ public sealed class OperatingSystemHost : AuditableEntity
 
     #region Navigation Properties
 
-    public ICollection<InstallOperation> InstallOperations { get; private set; } = [];
+    public ICollection<OrchestrationOperation> OrchestrationOperations { get; private set; } = [];
 
     public ICollection<InstalledSoftware> InstalledSoftwares { get; private set; } = [];
 

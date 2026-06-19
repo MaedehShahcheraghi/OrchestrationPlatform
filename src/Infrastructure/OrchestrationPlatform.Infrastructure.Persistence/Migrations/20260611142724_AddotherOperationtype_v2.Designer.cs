@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 
@@ -11,9 +12,11 @@ using OrchestrationPlatform.Infrastructure.Persistence.Contexts;
 namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(OrchestrationWriteDbContext))]
-    partial class OrchestrationWriteDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611142724_AddotherOperationtype_v2")]
+    partial class AddotherOperationtype_v2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -78,7 +81,7 @@ namespace OrchestrationPlatform.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrchestrationOperationId")
                         .IsUnique()
-                        .HasDatabaseName("UX_InstalledSoftwares_OrchestrationOperationId");
+                        .HasDatabaseName("UX_InstalledSoftwares_InstallOperationId");
 
                     b.HasIndex("SoftwarePackageVersionId")
                         .HasDatabaseName("IX_InstalledSoftwares_SoftwarePackageVersionId");

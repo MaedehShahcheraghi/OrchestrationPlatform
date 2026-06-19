@@ -58,7 +58,7 @@ public sealed class SoftwarePackageVersion : AuditableEntity
 
     public PackageArtifact? Artifact { get; }
 
-    public ICollection<InstallOperation> InstallOperations { get; private set; } = [];
+    public ICollection<OrchestrationOperation> OrchestrationOperations { get; private set; } = [];
 
     public ICollection<InstalledSoftware> InstalledSoftwares { get; private set; } = [];
 
